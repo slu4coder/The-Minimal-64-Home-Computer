@@ -1,6 +1,8 @@
 # The-Minimal-64-Home-Computer
 Here is my take on 80's home computer magic: My design of a "dream home computer", the Minimal 64. To me its the most computer from the least logic or the shortest way from TTL to Space Invaders. Have fun!
 
+
+
 ● Simple 'Von-Neumann' architecture, 8-bit data bus, 16-bit address bus
 
 ● 128 instructions including conditional branching, subroutines, stack and word operations
@@ -14,6 +16,7 @@ Here is my take on 80's home computer magic: My design of a "dream home computer
 ● 8MHz clock rate, CPU @ 6MHz with 0.84Mips
 
 
+
 ● 4 data registers A, B, X, Y
 
 ● ALU supporting ADD, SUBTRACT, NOT, AND, OR, XOR
@@ -25,11 +28,13 @@ Here is my take on 80's home computer magic: My design of a "dream home computer
 ● 61 TTL chips (only 74HCxx logic, 6C1008 SRAM, 39SF0x0 FLASH)
 
 
+
 ● Full native tool-chain: OS, text editor, assembler, Python-like language interpreter
 
 ● Games (Tetris, Invaders)
 
 ● Emulator and cross-assembler (Windows 10)
+
 
 
 A brief introduction: https://www.youtube.com/watch?v=3zGTsi4AYLw
