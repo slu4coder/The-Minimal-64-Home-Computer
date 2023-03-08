@@ -1,0 +1,99 @@
+# --------------------
+# MIN Standard Library
+# written by slu4 2023
+# --------------------
+
+# returns the element size of a string
+def strlen(char s): char e; return &e-&s
+
+# returns the element size of an int array
+def intlen(int i): char e; return &e-&i >> 1
+
+# compare two strings (0: equal)
+def strcmp(char s1, char s2):
+  int l1 = &s2 - &s1
+  if l1 != &l1 - &s2: return -1
+  int i=0
+  while i < l1:
+    if s1[i] != s2[i]: return -1
+    i+=1
+  return 0
+
+# convert a number to a string
+def str(int n):
+  char v
+  if n==0: return "0"
+  if n>0: v=""
+  else: n=-n; v="-"
+  char s=s[|5]
+  int i=5
+  while n>0:
+    i-=1
+    int d=n/10
+    s[i]=48+(n-d*10)
+    n=d
+  return v_s[i|5]
+
+# prints a string at cursor position
+def text(char s):
+  char z=0
+  char stack @ 0xff00
+  char p @ 0xffff
+  int sp = p and 0xff
+  stack[sp-3] = &s
+  stack[sp-4] = &s>>8
+  call(0xb048, 27)
+
+# sets cursor position
+def pos(char x, char y):
+  char posx @ 0xbf8c = x
+  char posy @ 0xbf8d = y
+
+# returns a signed random number byte
+def rnd():
+  call(0xb021,0)
+  char r @ 0xff02
+  return r
+
+# non-blocking keyboard input (0: none)
+def key():
+  call(0xb027,0)
+  char r @ 0xff02
+  return r
+
+# clears the screeen
+def clear(): call(0xb030, 0)
+
+# draws a rect
+def rect(int x, int y, int w, int h):
+  char stack @ 0xff00
+  char p @ 0xffff
+  int sp = p and 0xff
+  stack[sp-3] = x
+  stack[sp-4] = x>>8
+  stack[sp-5] = y
+  stack[sp-6] = w
+  stack[sp-7] = w>>8
+  stack[sp-8] = h
+  call(0xb045, 31)
+
+def line(int x1, int y1, int x2, int y2):
+  char stack @ 0xff00
+  char p @ 0xffff
+  int sp = p and 0xff
+  stack[sp-3] = x1
+  stack[sp-4] = x1>>8
+  stack[sp-5] = y1
+  stack[sp-6] = x2
+  stack[sp-7] = x2>>8
+  stack[sp-8] = y2
+  call(0xb042, 31)
+
+def dot(int x, int y):  
+  char stack @ 0xff00
+  char p @ 0xffff
+  int sp = p and 0xff
+  stack[sp-3] = x
+  stack[sp-4] = x>>8
+  stack[sp-5] = y
+  call(0xb036, 28)

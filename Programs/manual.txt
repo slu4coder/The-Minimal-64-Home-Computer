@@ -1,0 +1,373 @@
+%-------------------------------------------------
+M I N I M A L  6 4  HOME COMPUTER MANUAL  by slu4
+-------------------------------------------------
+
+Welcome to the MINIMAL 64. This document provides
+you with a reference and brief introduction on
+how to operate this computer and it's tool-chain.
+
+1. OS COMMANDS (1/2)
+
+The 'MinOS' operating system loads and executes
+any filename you enter as a separate program. So
+any file can be viewed as an 'OS command'. MinOS
+comes with the following built-in commands
+(parameters in square [] brackets are optional):
+
+'dir' displays the file directory of the SSD.
+
+'del <file>' deletes a file from the SSD.
+
+'show <file>' displays a text file page by page
+  Page breaks are denoted by a 'percent' sign.
+
+'format' formats SSD user area (banks 3..127).
+
+'defrag' frees up unused SSD storage fragments.
+
+'memset <x> <y> <d>' fills RAM <x>..<y> with <d>.
+%1. OS COMMANDS (2/2)
+
+'mon [<x>]'  starts a memory monitor [at <x>].
+  ENTER      exits the monitor to the OS prompt.
+  <x>        changes the monitor address to <x>.
+  [<x>].<y>  displays an address range.
+  :<d>[ <d>] deposits <d> at current address++.
+  #<x>       activates SSD bank <x>, 0x80 for RAM
+  <x>, <y>, <d> can be a HEX value '0' to 'ffff'.
+
+'memmove <x> <y> <z>' moves memory area <x>..<y>
+  to <z>. Source and destination may overlap.
+
+'receive' receives an 'Intel HEX File' you paste
+  via UART terminal and writes the data into RAM.
+
+'save <x> <y> <name>' saves memory area <x>..<y>
+  under the filename <name> onto the SSD.
+
+'flash' updates the OS 'in-situ' by writing the
+  RAM area 0x0000..0x2fff to FLASH banks 0..2.
+  The user SSD area remains unchanged.
+
+  o Assemble the OS with 'asm os.asm' on your PC.
+    This will output a 'HEX file' to the console.
+  o On the Minimal, type 'receive ENTER'.
+  o Paste the HEX file into a terminal window on
+    your PC connected to the Minimal via UART.
+  o On the Minimal, type ESC and 'flash ENTER'.
+%2. MEMORY MAP
+
+0x0000..0x0fff 4KB of selected FLASH bank or RAM:
+
+               bank 0: OS kernel & API image
+               bank 1: OS data (charset, tables)
+               bank 2: protected core OS commands
+               bank 3..127: user SSD area
+               bank >= 128: RAM (FLASH disabled)
+
+0x1000..0xafff 40KB free RAM
+
+0xb000..0xbcff 3KB OS kernel & API
+0xbd00..0xbeff 512 bytes of OS 'command memory'
+0xbf00..0xbf6f 112 bytes of OS 'save' command
+0xbf70..0xbf8d 30 bytes of OS variables
+0xbf8e..0xbfbf 50 bytes of OS line input buffer
+
+0xbfc0..0xbfff reserved for expansions cards
+
+0xc000..0xfeff 16KB video RAM (252 x 64 bytes)
+0xc30c         start of 400 x 240 pixels viewport
+
+0xff00         CPU X register
+0xff01         CPU Y register
+0xff02..0xfffe CPU stack memory
+0xffff         CPU stack pointer LSB
+%3. TEXT EDITOR 'edit [<file>]'
+
+The text editor resides in RAM 0x0000 - 0x0fff.
+Text data is stored from address 0x1000 onwards.
+Once loaded, the editor can be warm-started by
+typing 'run', preserving your text document.
+
+CTRL q  Quits the editor.
+CTRL n  Starts a new document.
+
+CTRL l  Dialog line to input a filename to load.
+CTRL s  Dialog line to save the text as a file.
+
+CTRL a  Marks the start of a text block.
+CTRL x  Marks the end of a text blocks and cuts
+        out the marked text block to clipboard.
+CTRL c  Marks the end of a text block and copies
+        the marked text block to clipboard.
+CTRL v  Inserts a text block from clipboard at
+        the current cursor position.
+
+CTRL r  Receives text via UART and inserts it at
+        the current position. Press ESC to end.
+CTRL t  Transmits the current text file via UART.
+%4. HIGH-LEVEL LANGUAGE 'min'
+
+MIN is a fast high-level Python-like interpreted
+programming language. 'min <file>' executes your
+program from SSD. 'min' directly starts a program
+at 0x1000.
+MIN occupies the RAM area 0x8000..0x9fff and uses
+0xa000..0xafff for runtime data storage.
+
+The following list of features and commands will
+get you started (for more information see the
+exact language definition in EBNF):
+
+o Python-style code block indentation (2 SPACES)
+o control structure 'if-elif-else', 'while-break'
+o variables with C-style static explicit typing
+o data types 'char' (8-bit) and 'int' (16-bit)
+o local and global variables, @ address operator
+o 'def-return', C-style '&' variable references
+o 'call(..)' for assembly/API routine integration
+o full expression handling including '+=', '-='
+o bitwise/logical operators 'and/or/xor/not'
+o [..|..] element access and '_' concatenation
+o decimal and HEX '0xffff' numbers, "..." strings
+o print(..) for text and decimal number output
+o 'use "<library>"' for recursive file import
+o 'std.min' library implements: pos, rnd, clear,
+   line, rect, dot, str, len, strcmp, key, etc.
+%5. ASSEMBLER 'asm' (1/2)
+
+ASM is MINIMAL's native assembler. To assemble
+a sourcefile <file> from SSD, type 'asm <file>'.
+In case the source text already resides in RAM
+you can simply assemble with 'asm'. ASM uses the
+RAM area 0x9000 - 0x9fff. Range 0xa000 - 0xafff
+holds label definitions during assembly.
+
+Note: While assembling a program, ASM uses two
+pointers: a memory counter (MC) and a program
+counter (PC). Data is always emitted to MC.
+Labels, however, are defined with respect to
+PC. Default for MC and PC is address 0x8000.
+
+#emit       starts data emission to MC
+#mute       mutes data emission to MC, but
+            keeps updating PC while assembling
+*           alias for current MC address value
+#org <addr> sets PC, sets MC only when emitting
+
+o Write mnemonics in capital letters (e. g. LDI).
+o Write HEX numbers in lower case (e. g. 0xff).
+o Separate elements by SPACE and/or comma.
+%5. ASSEMBLER 'asm' (2/2)
+
+label:      defines a label to be the current PC
+; comment   marks the rest of the line as comment
+<label      LSB operator (at element start only)
+>label      MSB operator (at element start only)
+0x0a, 123   HEX and DEC byte values
+0xff10      HEX word (little-endian) = 0x10, 0xff
+'A'         character, equivalent to 65 or 0x41
+'AAA', 0    string, equivalent to 65, 65, 65, 0
+addr+off-1  handling of simple expressions
+*           alias for the value of current MC
+
+Example:
+
+#org 0x8000             ; sets start address
+            LDI 0xff    ; loads 0xff into A
+            STA 0xc30c  ; deposits A in VRAM
+            JPA 0xb003  ; jumps back to OS prompt
+%6. CPU INSTRUCTION SET (1/8)
+
+INS     = instruction mnemonic  | -   = unchanged
+HX      =  hexadecimal opcode   | ?   = undefined
+OP SIZE =  operand type / size  | R   = result
+A       =  accumulator          | imm = immediate
+NCZ     =  ALU flags N, C, Z    | abs = absolute
+CL      =  clock cycles         | off = offset
+PC      =  program counter      | rel = relative
+
+INS|HX|DESCRIPTION       |TARGET|OP SIZE|A|NCZ|CL
+---+--+------------------+------+-------+-+---+--
+NOP|00|No operation      |-     |-     0|-|---|16
+BNK|01|Set SSD bank      |BANK  |A     0|-|---| 4
+BFF|02|Switch off SSD    |BANK  |-     0|-|---| 4
+WIN|03|Wait for input    |-     |-     0|?|???| -
+INP|04|UART input/clear  |A     |-     0|R|???| 5
+INK|05|PS/2 input/clear  |A     |-     0|R|???| 5
+OUT|06|UART output       |UART  |A     0|-|100| 4
+NOT|07|Bitwise NOT       |A     |-     0|R|---| 6
+NEG|08|Negate            |A     |-     0|R|RZR| 6
+INC|09|Increment         |A     |-     0|R|RRR| 5
+DEC|0a|Decrement         |A     |-     0|R|RRR| 5
+CLC|0b|Clear carry in    |-     |-     0|-|100| 5
+SEC|0c|Set carry in      |-     |-     0|-|011| 5
+%6. CPU INSTRUCTION SET (2/8)
+
+INS|HX|DESCRIPTION       |TARGET|OP SIZE|A|NCZ|CL
+---+--+------------------+------+-------+-+---+--
+LSL|0d|Logic shift left 1|A     |-     0|R|RRR| 5
+LL2|0e|Logic shift left 2|A     |-     0|R|RRR| 6
+LL3|0f|Logic shift left 3|A     |-     0|R|RRR| 7
+LL4|10|Logic shift left 4|A     |-     0|R|RRR| 8
+LL5|11|Logic shift left 5|A     |-     0|R|RRR| 9
+LL6|12|Logic shift left 6|A     |-     0|R|RRR|10
+LL7|13|Logic shift left 7|A     |-     0|R|RRR|11
+LSR|14|Logic shift right |A     |-     0|R|RRR|13
+---+--+------------------+------+-------+-+---+--
+ROL|15|Rotate left 1     |A     |-     0|R|RRR| 5
+RL2|16|Rotate left 2     |A     |-     0|R|RRR| 6
+RL3|17|Rotate left 3     |A     |-     0|R|RRR| 7
+RL4|18|Rotate left 4     |A     |-     0|R|RRR| 8
+RL5|19|Rotate left 5     |A     |-     0|R|RRR| 9
+RL6|1a|Rotate left 6     |A     |-     0|R|RRR|10
+RL7|1b|Rotate left 7     |A     |-     0|R|RRR|11
+ROR|1c|Rotate right      |A     |-     0|R|RRR|12
+%6. CPU INSTRUCTION SET (3/8)
+
+INS|HX|DESCRIPTION       |TARGET|OP SIZE|A|NCZ|CL
+---+--+------------------+------+-------+-+---+--
+LDI|1d|Load from         |A     |imm   1|R|---| 5
+ADI|1e|Add               |A     |imm   1|R|RRR| 5
+SBI|1f|Subtract          |A     |imm   1|R|RRR| 5
+ACI|20|Add with carry in |A     |imm   1|R|RRR| 5
+SCI|21|Sub with carry in |A     |imm   1|R|RRR| 5
+CPI|22|Compare           |A     |imm   1|-|RRR| 5
+ANI|23|Bitwise AND       |A     |imm   1|R|---| 5
+ORI|24|Bitwise OR        |A     |imm   1|R|---| 5
+XRI|25|Bitwise XOR       |A     |imm   1|R|---|12
+---+--+------------------+------+-------+-+---+--
+JPA|26|Jump to           |PC    |abs   2|-|---| 5
+LDA|27|Load from         |A     |abs   2|R|---| 7
+STA|28|Store A           |byte  |abs   2|-|---| 7
+ADA|29|Add               |A     |abs   2|R|RRR| 8
+SBA|2a|Subtract          |A     |abs   2|R|RRR| 8
+ACA|2b|Add with carry in |A     |abs   2|R|RRR| 8
+SCA|2c|Sub with carry in |A     |abs   2|R|RRR| 8
+CPA|2d|Compare           |A     |abs   2|-|RRR| 8
+ANA|2e|Bitwise AND       |A     |abs   2|R|---| 8
+ORA|2f|Bitwise OR        |A     |abs   2|R|---| 8
+XRA|30|Bitwise XOR       |A     |imm   1|R|---|15
+%6. CPU INSTRUCTION SET (4/8)
+
+INS|HX|DESCRIPTION       |TARGET|OP SIZE|A|NCZ|CL
+---+--+------------------+------+-------+-+---+--
+JPR|31|Jump to           |PC    |rel   2|-|---| 8
+LDR|32|Load from         |A     |rel   2|R|---|10
+STR|33|Store A           |byte  |rel   2|-|---|10
+ADR|34|Add               |A     |rel   2|R|RRR|11
+SBR|35|Subtract          |A     |rel   2|R|RRR|11
+ACR|36|Add with carry in |A     |rel   2|R|RRR|11
+SCR|37|Sub with carry in |A     |rel   2|R|RRR|11
+CPR|38|Compare           |A     |rel   2|-|RRR|11
+ANR|39|Bitwise AND       |A     |rel   2|R|---|11
+ORR|3a|Bitwise OR        |A     |rel   2|R|---|11
+%6. CPU INSTRUCTION SET (5/8)
+
+INS|HX|DESCRIPTION       |TARGET|OP SIZE|A|NCZ|CL
+---+--+------------------+------+-------+-+---+--
+CLB|3b|Clear             |byte  |abs   2|-|---| 8
+NOB|3c|Bitwise NOT       |byte,A|abs   2|R|---| 9
+NEB|3d|Negate            |byte,A|abs   2|R|RZR| 9
+INB|3e|Increment         |byte,A|abs   2|R|RRR| 9
+DEB|3f|Decrement         |byte,A|abs   2|R|RRR| 9
+ADB|40|Add               |byte,A|abs   2|R|RRR| 8
+SBB|41|Subtract          |byte,A|abs   2|R|RRR| 9
+ACB|42|Add with carry in |byte,A|abs   2|R|RRR| 8
+SCB|43|Sub with carry in |byte,A|abs   2|R|RRR| 9
+ANB|44|Bitwise AND       |byte,A|abs   2|R|---| 8
+ORB|45|Bitwise OR        |byte,A|abs   2|R|---| 8
+LLB|46|Shift left        |byte,A|abs   2|R|RRR| 8
+LRB|47|Shift right       |byte,A|abs   2|R|RRR| 8
+RLB|48|Rotate left       |byte,A|abs   2|R|RRR| 8
+RRB|49|Rotate right      |byte,A|abs   2|R|RRR| 8
+%6. CPU INSTRUCTION SET (6/8)
+
+INS|HX|DESCRIPTION       |TARGET|OP SIZE|A|NCZ|CL
+---+--+------------------+------+-------+-+---+--
+CLW|4a|Clear             |word  |abs   2|-|---| 9
+NOW|4b|Bitwise NOT       |word,A|abs   2|M|---|11
+NEW|4c|Negate            |word,A|abs   2|M|MZM|11
+INW|4d|Increment         |word,A|abs   2|M|MMM|11
+DEW|4e|Decrement         |word,A|abs   2|M|MMM|12
+ADW|4f|Add               |word,A|abs   2|M|MMM|11
+SBW|50|Subtract          |word,A|abs   2|M|MMM|12
+ACW|51|Add with carry in |word,A|abs   2|M|MMM|11
+SCW|52|Sub with carry in |word,A|abs   2|M|MMM|12
+LLW|53|Shift left        |word,A|abs   2|M|MMM|10
+RLW|54|Shift right       |word,A|abs   2|M|MMM|10
+---+--+------------------+------+-------+-+---+--
+JPS|55|Jump to subroutine|PC    |abs   2|?|---|14
+RTS|56|Return from sub   |PC    |-     0|-|---|12
+PHS|57|Push on stack     |stack |-     0|-|---|11
+PLS|58|Pull from stack   |A     |-     0|R|---| 7
+LDS|59|Load from stack   |A     |off   1|R|---| 8
+STS|5a|Store A on stack  |stack |off   1|-|---|15
+%6. CPU INSTRUCTION SET (7/8)
+
+INS|HX|DESCRIPTION       |TARGET|OP SIZE|A|NCZ|CL
+---+--+------------------+------+-------+-+---+--
+BNE|5b|Branch on not eq  |PC    |abs   2|-|---| 5
+BEQ|5c|Branch on equal   |PC    |abs   2|-|---| 5
+BCC|5d|Branch on C clear |PC    |abs   2|-|---| 5
+BCS|5e|Branch on C Set   |PC    |abs   2|-|---| 5
+BPL|5f|Branch on plus    |PC    |abs   2|-|---| 5
+BMI|60|Branch on minus   |PC    |abs   2|-|---| 5
+BLE|61|Branch less or eq |PC    |abs   2|-|---| 5
+BGT|62|Branch greater    |PC    |abs   2|-|---| 5
+---+--+------------------+------+-------+-+---+--
+TAX|63|Transfer A to X   |X     |-     0|-|---| 6
+TXA|64|Transfer X to A   |A     |-     0|R|---| 6
+TXY|65|Transfer X to Y   |Y     |-     0|-|---| 7
+LXI|66|Load from         |X     |imm   1|-|---| 7
+LXA|67|Load from         |X     |abs   2|-|---|10
+LAX|68|Load from abs+X 1)|A     |abs,X 2|R|???|13
+INX|69|Increment         |X     |-     0|R|RRR| 7
+DEX|6a|Decrement         |X     |-     0|R|RRR| 7
+ADX|6b|Add               |A     |-     0|R|RRR| 7
+SBX|6c|Subtract          |A     |-     0|R|RRR| 7
+CPX|6d|Compare           |A     |-     0|R|RRR| 7
+ANX|6e|Bitwise AND       |A     |-     0|R|---| 7
+ORX|6f|Bitwise OR        |A     |-     0|R|---| 7
+XRX|70|Bitwise XOR       |A     |-     0|R|---|13
+%6. CPU INSTRUCTION SET (8/8)
+
+INS|HX|DESCRIPTION       |TARGET|OP SIZE|A|NCZ|CL
+---+--+------------------+------+-------+-+---+--
+TAY|71|Transfer A to Y   |Y     |-     0|-|---| 7
+TYA|72|Transfer Y to A   |A     |-     0|R|---| 7
+TYX|73|Transfer Y to X   |X     |-     0|-|---|10
+LYI|74|Load from         |Y     |imm   1|-|---| 8
+LYA|75|Load from         |Y     |abs   2|-|---|11
+LAY|76|Load from abs+Y 1)|A     |abs,Y 2|R|???|14
+INY|77|Increment         |Y     |-     0|R|RRR| 8
+DEY|78|Decrement         |Y     |-     0|R|RRR| 8
+ADY|79|Add               |A     |-     0|R|RRR| 8
+SBY|7a|Subtract          |A     |-     0|R|RRR| 8
+CPY|7b|Compare           |A     |-     0|R|RRR| 8
+ANY|7c|Bitwise AND       |A     |-     0|R|---| 8
+ORY|7d|Bitwise OR        |A     |-     0|R|---| 8
+XRY|7e|Bitwise XOR       |A     |-     0|R|---|14
+---+--+------------------+------+-------+-+---+--
+HLT|7f|Halt CPU          |-     |-     0|?|???| -
+
+  1) takes 2 more cycles crossing a page boundary
+%7. HARDWARE SPECIFICATION
+
+System clock rate............................8MHz
+
+Effective CPU clock rate.....................6MHz
+
+Supply voltage range.................4.3V to 5.5V
+
+Supply current.......140mA @ 4.3V to 200mA @ 5.5V
+
+UART bit rate.............................250Kbps
+
+UART format 1 start bit, 8 data bits, 2 stop bits
+            no parity bit, newline LF (0x0a)
+
+UART transmit delay.....................10ms/line
+
+Set the terminal emulation to 50 x 30 characters.
+%

@@ -1,0 +1,13 @@
+def hexprint(int w)
+  print("0x")
+  int i=0
+  while i<4:
+    char c = (w and 0xf000) >> 12
+    if c < 10: c = c + "0"
+    else: c = c - 10 + "a"
+    print(c)
+    w = w << 4
+    i+=1
+  print("\n")
+
+hexprint(49152)
