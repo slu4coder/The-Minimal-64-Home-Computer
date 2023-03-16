@@ -495,6 +495,7 @@ int_lsr:  			LDA intB+0 CPI 0 BEQ intlsrdone
   intlsrdone:     	RTS
 
 ; strptr points to a null-terminated string
+; modifies: intC
 int_tostr:			CLB int_str
 								LDA intA+0 STA intC+0								; PRINT A 16-BIT REGISTER AS DEC NUMBER
 								LDA intA+1 STA intC+1								; copy A to working reg C so A remains unchanged
@@ -614,11 +615,11 @@ getCall:				LDA g_nextcall+0 STA getptr+0								  ; copy call top ptr
 ; EXPRESSIONS
 ; --------------------------------------------------------------------------------------
 
-Factor:					CLB g_refset LDR g_pc                         ; use default referenced element size 1
+Factor:					CLB g_refset LDR g_pc                         				; use default referenced element size 1
 
-								CPI 0xd0 BNE fac_next2												; TN_INT_CONST
+								CPI 0xd0 BNE fac_next2																; TN_INT_CONST
 									INW g_pc LDI 2 STA g_type
-									LDI 1 STA g_cnt+0 CLB g_cnt+1								; single int
+									LDI 1 STA g_cnt+0 CLB g_cnt+1												; single int
 									LDR g_pc STR g_sp INW g_pc
 									LDR g_pc STR g_spi INW g_pc
 									RTS
@@ -628,8 +629,8 @@ fac_next2:			CPI '&' BNE fac_next3													    		; VARIABLE
 									LDR g_pc CPI 'V' BEQ fac_isvar
 										LDI <error05 PHS LDI >error05 PHS JPA Error				; error "Invalid expression"
 fac_next3:			CPI 'V' BNE fac_next4
-									PHS																					    		; push & consume 'V'
-	fac_isvar:			INW g_pc																						; either 'V' or '&' was pushed above
+									PHS																					    		; push 'V'
+	fac_isvar:			INW g_pc																						; consume, either 'V' or '&' was pushed above
                   LDR g_pc PHS PHS INW g_pc JPS getVar				    		; get & consume variable ID, push v->type on stack
                   PLS STA facptr+1 PLS STA facptr+0										; load var item onto stack:
 									LDR facptr PHS INW facptr														; ->type
@@ -709,8 +710,9 @@ fac_next3:			CPI 'V' BNE fac_next4
 		fac_endfull:	  LDI 0 STR fac_dst                       	; always write 0-termination into stack memory
                     LDA fac_dst+1 CPI >endsp BCC fac_fullrts	; MATH MEMORY CHECK SINGLE FACTOR
                       JPA memerror
-	fac_fullref:	  LDI 2 STA g_type LDI 1 STA g_refset					; FULL REFERENCE
-									LDS 4 STA g_refcnt+0 LDS 3 STA g_refcnt+1		; ->cnt to g_refcnt
+	fac_fullref:	  LDI 2 STA g_type														; FULL REFERENCE
+									LDI 1 STA g_refset STA g_cnt+0 CLB g_cnt+1	; set type=2, cnt=1
+									LDS 4 STA g_refcnt+0 LDS 3 STA g_refcnt+1		; ->cnt to g_refcnt, g_refset=1
 									LDS 2 STR g_sp LDS 1 STR g_spi							; put ->ptr onto math stack
 		fac_fullrts:	LDI 6 ADB 0xffff RTS
 
@@ -978,15 +980,16 @@ PrintStmt:			JPS AssertORound
   printmore:    LDR g_pc CPI ')' BEQ printexit
 								JPS CompExpr
                 LDA g_type CPI 1 BEQ printchars
-                  LDA g_cnt+0 STA intB+0 LDA g_cnt+1 STA intB+1   	; g_cnt -> intB as counter
-                  LDA g_sp+0 STA intD+0 LDA g_sp+1 STA intD+1     	; intD = print pointer
-    printnext:    DEW intB BCC printmore
-    					      LDR intD STA intA+0 INW intD                  	; read out next int
+                  LDA g_cnt+0 STA intB+0 
+									LDA g_cnt+1 STA intB+1   	; g_cnt -> intB as counter
+									LDA g_sp+0 STA intD+0 LDA g_sp+1 STA intD+1     	; intD = print pointer
+    printnext:    DEW intB BCC printmore														; first test for zero elements
+    printnext2:     LDR intD STA intA+0 INW intD                  	; read out next int
                     LDR intD STA intA+1 INW intD
                     JPS int_tostr                                 	; convert intA to string
                     LDA strptr+0 PHS LDA strptr+1 PHS JPS _Print PLS PLS
-                    LDA intB+0 ORA intB+1 CPI 0 BEQ printmore     	; last element printed?
-                      LDI '_' PHS JPS _PrintChar PLS JPA printnext
+                    DEW intB BCC printmore
+                      LDI '_' PHS JPS _PrintChar PLS JPA printnext2
   printchars:   LDA g_sp+0 PHS LDA g_sp+1 PHS JPS _Print PLS PLS
                 JPA printmore
   printexit:    INW g_pc RTS																				; consume final ')'
@@ -1125,7 +1128,7 @@ VarAssignment:			LDR g_pc CPI '[' BEQ ass_element
 												INW assptr LDR assptr STA intB+1
 												LDA intA+1 SBB intB+1 BCC ass_indexerr		; ->max - (g_cnt + offset) >= 0 ? -> okay!
 													LDA intA+0 SBW intB BCS ass_copy
-			ass_indexerr:				  LDI <error14 PHS LDI >error14 PHS 		; error "Out of memory"
+			ass_indexerr:				  LDI <error14 PHS LDI >error14 PHS 		; error "Invalid index"
 														JPA Error
 		ass_nooffset:			PLS																					; discard "no-offset" LSB
 											LDS 4 STA assptr+0 LDS 3 STA assptr+1   		; goto vp->type
