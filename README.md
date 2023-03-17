@@ -1,5 +1,5 @@
 # The-Minimal-64-Home-Computer
-Here is my take on 80's home computer magic: My design of a "dream home computer", the Minimal 64. To me its the most computer from the least logic or the shortest way from TTL to Space Invaders. Have fun!
+Here is my take on 80's home computer magic: The Minimal 64! To me, its the most computer from the least logic or the shortest way from TTL to Space Invaders. Have fun!
 
 ● Simple 'Von-Neumann' architecture, 8-bit data bus, 16-bit address bus
 
@@ -33,6 +33,6 @@ A brief introduction: https://www.youtube.com/watch?v=3zGTsi4AYLw
 
 Reference Manual: https://docs.google.com/document/d/1e4hL9Z7BLIoUlErWgJOngnSMYLXjfnsZB9BtlwhTC6U/edit?usp=sharing
 
-Want to give something back? https://www.paypal.me/carstenherting
+You like my stuff and want to give something back? https://www.paypal.me/carstenherting
 
 My YouTube channel: https://www.youtube.com/channel/UCXYQcMpUBT3aaQKfmAVJNow
