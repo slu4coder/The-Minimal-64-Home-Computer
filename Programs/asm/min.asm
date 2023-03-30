@@ -4,6 +4,7 @@
 ; written by Carsten Herting (slu4)       10.02.22-31.05.2022
 ; optimized and ported to the MINIMAL 64  15.09.22-15.11.2022
 ; tokenized and highly optimized version  21.01.23-11.02.2023
+; last update                                      16.03.2023
 ; -----------------------------------------------------------
 
 ; LICENSING INFORMATION
@@ -25,10 +26,10 @@
 ; 0xaa00 - 0xaf7f   local variables and expressions (1408 bytes)
 ; 0xaf92 - 0xafff		use dict (5 x 22 bytes)
 ; ---------------
-; 0xb000 - 0xbfff   4KB OS Kernel
-; 0xc000 - 0xfeff   16KB Video RAM
-; 0xff00            X
-; 0xff01            Y
+; 0xb000 - 0xbfff   4KB OS kernel
+; 0xc000 - 0xfeff   16KB video RAM
+; 0xff00            X "register"
+; 0xff01            Y "register"
 ; 0xff02            mirrors A returned after 'call()'
 ; 0xff03 - 0xfffe   CPU stack memory
 ; 0xffff            CPU stack pointer (SP)
@@ -693,7 +694,7 @@ fac_next3:			CPI 'V' BNE fac_next4
 										LLW intB																  				; start x 2 wg. int
 		fac_char:			LDS 8 ADW intB LDS 7 ADB intB+1						  				; add vp->ptr to intB
 									LDS 2 STA g_refcnt+0 LDS 1 STA g_refcnt+1	  				; store anz
-		fac_elemrts:	LDI 12 ADW 0xffff RTS
+		fac_elemrts:	LDI 12 ADB 0xffff RTS
 
 									; copies the full variable onto the math stack (faster)
 	fac_fullvar:		LDS 6 CPI '&' BEQ fac_fullref								; FULL VAR

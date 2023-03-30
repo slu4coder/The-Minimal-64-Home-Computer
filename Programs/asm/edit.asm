@@ -185,7 +185,7 @@ StateChar:  JPS Update                             ; check if redraw is needed b
                     LDA markptr+0 PHS LDA markptr+1 PHS  ; push destination
                     LDA pc_sptr+0 PHS LDA pc_sptr+1 PHS  ; push sources
                     LDA pc_ptr+0 PHS LDA pc_ptr+1 PHS    ; push number of bytes to move
-                    JPS _MemMove LDI 6 ADW 0xffff        ; move and clean up stack
+                    JPS _MemMove LDI 6 ADB 0xffff        ; move and clean up stack
                 LDA marktptr+0 STA tptr+0 LDA marktptr+1 STA tptr+1
                 LDA markyorg+0 STA yorg+0 LDA markyorg+1 STA yorg+1
                 LDA markptr+0 STA cptr+0 LDA markptr+1 STA cptr+1
@@ -223,7 +223,7 @@ StateChar:  JPS Update                             ; check if redraw is needed b
                 LDA pc_ptr+0 PHS LDA pc_ptr+1 PHS     ; push move destination
                 LDA pc_dptr+0 PHS LDA pc_dptr+1 PHS   ; push move source
                 LDA pc_sptr+0 PHS LDA pc_sptr+1 PHS   ; push move anzahl
-                JPS _MemMove LDI 6 ADW 0xffff         ; move exisiting text to pc_ptr
+                JPS _MemMove LDI 6 ADB 0xffff         ; move exisiting text to pc_ptr
 
                 ; move the reverse stuff into text, update cptr, xcur, ycur, yorg and tptr char by char
 
@@ -759,11 +759,11 @@ pushline:       LDA changed CPI 0 BEQ pl_nochange
                   LDA pu_dptr+0 PHS LDA pu_dptr+1 PHS           ; push dest
                   LDA pu_sptr+0 PHS LDA pu_sptr+1 PHS           ; push source
                   LDA pu_len+0 PHS LDA pu_len+1 PHS             ; push size
-                  JPS _MemMove LDI 6 ADW 0xffff
+                  JPS _MemMove LDI 6 ADB 0xffff
                   LDA cptr+0 PHS LDA cptr+1 PHS                 ; push dest
                   LDI <line PHS LDI >line PHS                   ; push source
                   LDA pu_n PHS LDI 0 PHS                        ; push size
-                  JPS _MemMove LDI 6 ADW 0xffff
+                  JPS _MemMove LDI 6 ADB 0xffff
   pl_nochange:  RTS
 
 ; ------------------------------------------------------------
