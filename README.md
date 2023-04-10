@@ -1,4 +1,7 @@
 # The-Minimal-64-Home-Computer
+
+NEW: Java/Processing version of the emulator available!
+
 Here is my take on 80's home computer magic: The Minimal 64! To me, its the most computer from the least logic or the shortest way from TTL to Space Invaders. Have fun!
 
 ● Simple 'Von-Neumann' architecture, 8-bit data bus, 16-bit address bus
