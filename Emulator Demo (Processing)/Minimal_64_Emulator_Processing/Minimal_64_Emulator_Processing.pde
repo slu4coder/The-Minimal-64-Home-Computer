@@ -25,9 +25,9 @@ long[] keyPressedTimestamps = new long[0x100]; // timestamps of keypresses
 ArrayList<Byte> serialInput = new ArrayList<Byte>();
 ArrayList<Byte> ps2Input = new ArrayList<Byte>();
 int serialWaitClocks=0, ps2WaitClocks=0; // emulates the speed of a PS2 or serial sender
-
 int haveClocks=0; // number of cycles to be simulated
 int flashState=0; // determines the state of a write operation to FLASH (see SSF39 datasheet)
+
 byte[] mFlash; byte[] mRam = new byte[0x10000]; // memory of the CPU
 int mBank=0, mA=0, mFlags=0, mPC=0; // register states of the CPU
 
@@ -199,13 +199,13 @@ void convertKeyCodeToPS2(boolean isPressed) // convert Processing's keyCodes/key
 
 // -------------------------------------------------------------------------------------------------
 
-int Read(int at) // reads a byte from memory (either FLASH or RAM)
+int ReadMem(int at) // reads a byte from memory (either FLASH or RAM)
 {
   if (((mBank & 0x80) != 0) || ((at & 0xf000) != 0)) return (int)(mRam[at & 0xffff]) & 0xff;
   else return (int)(mFlash[(mBank<<12) | (at & 0x0fff)]) & 0xff;
 }
 
-void Write(int b, int at) // writes a byte to memory (either FLASH or RAM), emulates FLASH behaviour (see SSF39 datasheet)
+void WriteMem(int b, int at) // writes a byte to memory (either FLASH or RAM), emulates FLASH behaviour (see SSF39 datasheet)
 {
   if (((mBank & 0x80) != 0) || ((at & 0xf000) != 0)) mRam[at & 0xffff] = (byte)(b); // RAM WRITE ACCESS
   else // FLASH WRITE ACCESS
@@ -238,14 +238,14 @@ void DoFlagZN(int a) // update the Z and N flag
 void DoFlagCLikeZ() { int c = (mFlags & FLAG_Z)<<1; mFlags = (mFlags & 5) | c; } // make C=Z
 void DoFlagCAdd(int a) { if ((a & 0xffffff00) != 0) mFlags |= FLAG_C; else mFlags &= ~FLAG_C; } // handle C during addition
 void DoFlagCSub(int a) { if ((a & 0xffffff00) != 0) mFlags &= ~FLAG_C; else mFlags |= FLAG_C; } // handle C during subtraction
-int TakeAddr() { int a = Read(mPC++); a |= Read(mPC++)<<8; return a; } // consume an absolute address from program counter (mPC)
-int GetAddr(int adr) { int a = Read(adr++); a |= (Read(adr++)<<8); return a; } // get a relative address
+int TakeAddr() { int a = ReadMem(mPC++); a |= ReadMem(mPC++)<<8; return a; } // consume an absolute address from program counter (mPC)
+int GetAddr(int adr) { int a = ReadMem(adr++); a |= (ReadMem(adr++)<<8); return a; } // get a relative address
 
 // -------------------------------------------------------------------------------------------------
 
 int DoInstruction() // handle all instructions
 {
-  int inst = Read(mPC++); // fetch instruction at program counter
+  int inst = ReadMem(mPC++); // fetch instruction at program counter
   switch(inst) // process the instruction
   {
     case 0: break; // NOP
@@ -317,17 +317,17 @@ int DoInstruction() // handle all instructions
       DoFlagZN(mA);
       break;
     }
-    case 29: mA = Read(mPC++); break; // LDI
+    case 29: mA = ReadMem(mPC++); break; // LDI
     case 30: // ADI
     {
-      int a = (mA & 0xff) + Read(mPC++);
+      int a = (mA & 0xff) + ReadMem(mPC++);
       mA = a & 0xff;
       DoFlagCAdd(a); DoFlagZN(mA);
       break;
     }
     case 31: // SBI
     {
-      int a = mA - Read(mPC++);
+      int a = mA - ReadMem(mPC++);
       mA = a & 0xff;
       DoFlagCSub(a);
       DoFlagZN(mA);
@@ -335,7 +335,7 @@ int DoInstruction() // handle all instructions
     }
     case 32: // ACI
     {
-      int a = mA + Read(mPC++);
+      int a = mA + ReadMem(mPC++);
       if ((mFlags & FLAG_C) != 0) a++;
       mA = a & 0xff;
       DoFlagCAdd(a); DoFlagZN(mA);
@@ -343,7 +343,7 @@ int DoInstruction() // handle all instructions
     }
     case 33: // SCI
     {
-      int a = mA - Read(mPC++);
+      int a = mA - ReadMem(mPC++);
       if ((mFlags & FLAG_C) == 0) a--;
       mA = a & 0xff;
       DoFlagCSub(a);
@@ -352,20 +352,20 @@ int DoInstruction() // handle all instructions
     }
     case 34: // CPI
     {
-      int a = mA - Read(mPC++);
+      int a = mA - ReadMem(mPC++);
       DoFlagCSub(a);
       DoFlagZN(a);
       break;
     }
-    case 35: mA &= Read(mPC++); break; // ANI
-    case 36: mA |= Read(mPC++); break; // ORI
-    case 37: mA ^= Read(mPC++); break; // XRI
+    case 35: mA &= ReadMem(mPC++); break; // ANI
+    case 36: mA |= ReadMem(mPC++); break; // ORI
+    case 37: mA ^= ReadMem(mPC++); break; // XRI
     case 38: mPC = TakeAddr(); break; // JPA
-    case 39: mA = Read(TakeAddr()); break; // LDA
-    case 40: Write(mA, TakeAddr()); break; // STA
+    case 39: mA = ReadMem(TakeAddr()); break; // LDA
+    case 40: WriteMem(mA, TakeAddr()); break; // STA
     case 41: // ADA
     {
-      int a = mA + Read(TakeAddr());
+      int a = mA + ReadMem(TakeAddr());
       mA = a & 0xff;
       DoFlagCAdd(a);
       DoFlagZN(mA);
@@ -373,14 +373,14 @@ int DoInstruction() // handle all instructions
     }
     case 42: // SBA
     {
-      int a = mA - Read(TakeAddr());
+      int a = mA - ReadMem(TakeAddr());
       mA = a & 0xff;
       DoFlagCSub(a); DoFlagZN(mA);
       break;
     }
     case 43: // ACA
     {
-      int a = mA + Read(TakeAddr());
+      int a = mA + ReadMem(TakeAddr());
       if ((mFlags & FLAG_C) != 0) a++;
       mA = a & 0xff;
       DoFlagCAdd(a); DoFlagZN(mA);
@@ -388,7 +388,7 @@ int DoInstruction() // handle all instructions
     }
     case 44: // SCA
     {
-      int a = mA - Read(TakeAddr());
+      int a = mA - ReadMem(TakeAddr());
       if ((mFlags & FLAG_C) == 0) a--;
       mA = a & 0xff;
       DoFlagCSub(a);
@@ -397,20 +397,20 @@ int DoInstruction() // handle all instructions
     }
     case 45: // CPA
     {
-      int a = mA - Read(TakeAddr());
+      int a = mA - ReadMem(TakeAddr());
       DoFlagCSub(a);
       DoFlagZN(a);
       break;
     }
-    case 46: mA &= Read(TakeAddr()); break; // ANA
-    case 47: mA |= Read(TakeAddr()); break; // ORA
-    case 48: mA ^= Read(TakeAddr()); break; // XRA
+    case 46: mA &= ReadMem(TakeAddr()); break; // ANA
+    case 47: mA |= ReadMem(TakeAddr()); break; // ORA
+    case 48: mA ^= ReadMem(TakeAddr()); break; // XRA
     case 49: mPC = GetAddr(TakeAddr()); break; // JPR
-    case 50: mA = Read(GetAddr(TakeAddr())); break; // LDR
-    case 51: Write(mA, GetAddr(TakeAddr())); break; // STR
+    case 50: mA = ReadMem(GetAddr(TakeAddr())); break; // LDR
+    case 51: WriteMem(mA, GetAddr(TakeAddr())); break; // STR
     case 52: // ADR
     {
-      int a = mA + Read(GetAddr(TakeAddr()));
+      int a = mA + ReadMem(GetAddr(TakeAddr()));
       mA = a & 0xff;
       DoFlagCAdd(a);
       DoFlagZN(mA);
@@ -418,14 +418,14 @@ int DoInstruction() // handle all instructions
     }
     case 53: // SBR
     {
-      int a = mA - Read(GetAddr(TakeAddr()));
+      int a = mA - ReadMem(GetAddr(TakeAddr()));
       mA = a & 0xff;
       DoFlagCSub(a); DoFlagZN(mA);
       break;
     }
     case 54: // ACR
     {
-      int a = mA + Read(GetAddr(TakeAddr()));
+      int a = mA + ReadMem(GetAddr(TakeAddr()));
       if ((mFlags & FLAG_C) != 0) a++;
       mA = a & 0xff;
       DoFlagCAdd(a);
@@ -434,7 +434,7 @@ int DoInstruction() // handle all instructions
     }
     case 55: // SCR
     {
-      int a = (mA & 0xff) - Read(GetAddr(TakeAddr()));
+      int a = (mA & 0xff) - ReadMem(GetAddr(TakeAddr()));
       if ((mFlags & FLAG_C) == 0) a--;
       mA = a & 0xff;
       DoFlagCSub(a); DoFlagZN(mA);
@@ -442,36 +442,36 @@ int DoInstruction() // handle all instructions
     }
     case 56: // CPR
     {
-      int a = mA - Read(GetAddr(TakeAddr()));
+      int a = mA - ReadMem(GetAddr(TakeAddr()));
       DoFlagCSub(a);
       DoFlagZN(a);
       break;
     }
-    case 57: mA &= Read(GetAddr(TakeAddr())); break; // ANR
-    case 58: mA |= Read(GetAddr(TakeAddr())); break; // ORR
-    case 59: Write(0, TakeAddr()); break; // CLB
+    case 57: mA &= ReadMem(GetAddr(TakeAddr())); break; // ANR
+    case 58: mA |= ReadMem(GetAddr(TakeAddr())); break; // ORR
+    case 59: WriteMem(0, TakeAddr()); break; // CLB
     case 60: // NOB
     {
       int adr = TakeAddr();
-      mA = ~Read(adr);
-      Write(mA, adr);
+      mA = ~ReadMem(adr);
+      WriteMem(mA, adr);
       break;
     }
     case 61: // NEB
     {
       int adr = TakeAddr();
-      int a = -Read(adr);
+      int a = -ReadMem(adr);
       mA = a & 0xff;
-      Write(mA, adr);
+      WriteMem(mA, adr);
       DoFlagZN(mA); DoFlagCLikeZ();
       break;
     }
     case 62: // INB
     {
       int adr = TakeAddr();
-      int a = Read(adr) + 1;
+      int a = ReadMem(adr) + 1;
       mA = a & 0xff;
-      Write(mA, adr);
+      WriteMem(mA, adr);
       DoFlagCAdd(a);
       DoFlagZN(mA);
       break;
@@ -479,18 +479,18 @@ int DoInstruction() // handle all instructions
     case 63: // DEB
     {
       int adr = TakeAddr();
-      int a = Read(adr) - 1;
+      int a = ReadMem(adr) - 1;
       mA = a & 0xff;
-      Write(mA, adr);
+      WriteMem(mA, adr);
       DoFlagCSub(a); DoFlagZN(mA);
       break;
     }
     case 64: // ADB
     {
       int adr = TakeAddr();
-      int a = Read(adr) + mA;
+      int a = ReadMem(adr) + mA;
       mA = a & 0xff;
-      Write(mA, adr);
+      WriteMem(mA, adr);
       DoFlagCAdd(a);
       DoFlagZN(mA);
       break;
@@ -498,19 +498,19 @@ int DoInstruction() // handle all instructions
     case 65: // SBB
     {
       int adr = TakeAddr();
-      int a = Read(adr) - mA;
+      int a = ReadMem(adr) - mA;
       mA = a & 0xff;
-      Write(mA, adr);
+      WriteMem(mA, adr);
       DoFlagCSub(a); DoFlagZN(mA);
       break;
     }
     case 66: // ACB
     {
       int adr = TakeAddr();
-      int a = Read(adr) + mA;
+      int a = ReadMem(adr) + mA;
       if ((mFlags & FLAG_C) != 0) a++;
       mA = a & 0xff;
-      Write(mA, adr);
+      WriteMem(mA, adr);
       DoFlagCAdd(a);
       DoFlagZN(mA);
       break;
@@ -518,10 +518,10 @@ int DoInstruction() // handle all instructions
     case 67: // SCB
     {
       int adr = TakeAddr();
-      int a = Read(adr) - mA;
+      int a = ReadMem(adr) - mA;
       if ((mFlags & FLAG_C) == 0) a--;
       mA = a & 0xff;
-      Write(mA, adr);
+      WriteMem(mA, adr);
       DoFlagCSub(a);
       DoFlagZN(mA);
       break;
@@ -529,23 +529,23 @@ int DoInstruction() // handle all instructions
     case 68: // ANB
     {
       int adr = TakeAddr();
-      mA &= Read(adr);
-      Write(mA, adr);
+      mA &= ReadMem(adr);
+      WriteMem(mA, adr);
       break;
     }
     case 69: // ORB
     {
       int adr = TakeAddr();
-      mA |= Read(adr);
-      Write(mA, adr);
+      mA |= ReadMem(adr);
+      WriteMem(mA, adr);
       break;
     }
     case 70: // LLB
     {
       int adr = TakeAddr();
-      int a = Read(adr)<<1;
+      int a = ReadMem(adr)<<1;
       mA = a & 0xff;
-      Write(mA, adr);
+      WriteMem(mA, adr);
       if ((a & 0x00000100) != 0) mFlags |= FLAG_C; else mFlags &= ~FLAG_C;
       DoFlagZN(mA);
       break;
@@ -553,20 +553,20 @@ int DoInstruction() // handle all instructions
     case 71: // LRB
     {
       int adr = TakeAddr();
-      mA = Read(adr);
+      mA = ReadMem(adr);
       if ((mA & 1) != 0) mFlags |= FLAG_C; else mFlags &= ~FLAG_C;
       mA = ((mA & 0xff)>>1); mFlags &= ~FLAG_N;
       if (mA == 0) mFlags |= FLAG_Z; else mFlags &= ~FLAG_Z;
-      Write(mA, adr);
+      WriteMem(mA, adr);
       break;
     }
     case 72: // RLB
     {
       int adr = TakeAddr();
-      int a = Read(adr)<<1;
+      int a = ReadMem(adr)<<1;
       if ((mFlags & FLAG_C) != 0) a |= 1;
       mA = a & 0xff;
-      Write(mA, adr);
+      WriteMem(mA, adr);
       if ((a & 0x00000100) != 0) mFlags |= FLAG_C; else mFlags &= ~FLAG_C;
       DoFlagZN(mA);
       break;
@@ -574,10 +574,10 @@ int DoInstruction() // handle all instructions
     case 73: // RRB
     {
       int adr = TakeAddr();
-      int a = Read(adr);
+      int a = ReadMem(adr);
       if ((mFlags & FLAG_C) != 0) a |= 0x100;
       mA = ((a>>1) & 0xff);
-      Write(mA, adr);
+      WriteMem(mA, adr);
       if ((a & 1) != 0) mFlags |= FLAG_C; else mFlags &= ~FLAG_C;
       DoFlagZN(mA);
       break;
@@ -585,26 +585,26 @@ int DoInstruction() // handle all instructions
     case 74: // CLW
     {
       int adr = TakeAddr();
-      Write(0, adr);
-      Write(0, adr+1);
+      WriteMem(0, adr);
+      WriteMem(0, adr+1);
       break;
     }
     case 75: // NOW
     {
       int adr = TakeAddr();
-      int a = ~Read(adr);
-      mA = (~Read(adr+1)) & 0xff;
-      Write(a, adr);
-      Write(mA, adr+1);
+      int a = ~ReadMem(adr);
+      mA = (~ReadMem(adr+1)) & 0xff;
+      WriteMem(a, adr);
+      WriteMem(mA, adr+1);
       break;
     }
     case 76: // NEW
     {
       int adr = TakeAddr();
-      int a = -((Read(adr+1)<<8) | Read(adr));
+      int a = -((ReadMem(adr+1)<<8) | ReadMem(adr));
       mA = (a>>8) & 0xff;
-      Write(mA, adr+1);
-      Write(a & 0xff, adr);
+      WriteMem(mA, adr+1);
+      WriteMem(a & 0xff, adr);
       DoFlagZN(mA);
       DoFlagCLikeZ();
       break;
@@ -612,10 +612,10 @@ int DoInstruction() // handle all instructions
     case 77: // INW
     {
       int adr = TakeAddr();
-      int a = ((Read(adr+1)<<8) | Read(adr)) + 1;
+      int a = ((ReadMem(adr+1)<<8) | ReadMem(adr)) + 1;
       mA = (a>>8) & 0xff;
-      Write(mA, adr+1);
-      Write(a & 0xff, adr);
+      WriteMem(mA, adr+1);
+      WriteMem(a & 0xff, adr);
       if ((a & 0xffff0000) != 0) mFlags |= FLAG_C; else mFlags &= ~FLAG_C;
       DoFlagZN(mA);
       break;
@@ -623,10 +623,10 @@ int DoInstruction() // handle all instructions
     case 78: // DEW
     {
       int adr = TakeAddr();
-      int a = ((Read(adr+1)<<8) | Read(adr)) - 1;
+      int a = ((ReadMem(adr+1)<<8) | ReadMem(adr)) - 1;
       mA = (a>>8) & 0xff;
-      Write(mA, adr+1);
-      Write(a & 0xff, adr);
+      WriteMem(mA, adr+1);
+      WriteMem(a & 0xff, adr);
       if ((a & 0xffff0000) != 0) mFlags &= ~FLAG_C; else mFlags |= FLAG_C;
       DoFlagZN(mA);
       break;
@@ -634,9 +634,9 @@ int DoInstruction() // handle all instructions
     case 79: // ADW
     {
       int adr = TakeAddr();
-      int a = ((Read(adr+1)<<8) | Read(adr)) + mA;
+      int a = ((ReadMem(adr+1)<<8) | ReadMem(adr)) + mA;
       mA = (a>>8) & 0xff;
-      Write(mA, adr+1); Write(a & 0xff, adr);
+      WriteMem(mA, adr+1); WriteMem(a & 0xff, adr);
       if ((a & 0xffff0000) != 0) mFlags |= FLAG_C; else mFlags &= ~FLAG_C;
       DoFlagZN(mA);
       break;
@@ -644,9 +644,9 @@ int DoInstruction() // handle all instructions
     case 80: // SBW
     {
       int adr = TakeAddr();
-      int a = ((Read(adr+1)<<8) | Read(adr)) - mA;
+      int a = ((ReadMem(adr+1)<<8) | ReadMem(adr)) - mA;
       mA = (a>>8) & 0xff;
-      Write(mA, adr+1); Write(a & 0xff, adr);
+      WriteMem(mA, adr+1); WriteMem(a & 0xff, adr);
       if ((a & 0xffff0000) != 0) mFlags &= ~FLAG_C; else mFlags |= FLAG_C;
       DoFlagZN(mA);
       break;
@@ -654,10 +654,10 @@ int DoInstruction() // handle all instructions
     case 81: // ACW
     {
       int adr = TakeAddr();
-      int a = ((Read(adr+1)<<8) | Read(adr)) + mA;
+      int a = ((ReadMem(adr+1)<<8) | ReadMem(adr)) + mA;
       if ((mFlags & FLAG_C) != 0) a++;
       mA = (a>>8) & 0xff;
-      Write(mA, adr+1); Write(a & 0xff, adr);
+      WriteMem(mA, adr+1); WriteMem(a & 0xff, adr);
       if ((a & 0xffff0000) != 0) mFlags |= FLAG_C; else mFlags &= ~FLAG_C;
       DoFlagZN(mA);
       break;
@@ -665,11 +665,11 @@ int DoInstruction() // handle all instructions
     case 82: // SCW
     {
       int adr = TakeAddr();
-      int a = ((Read(adr+1)<<8) | Read(adr)) - mA;
+      int a = ((ReadMem(adr+1)<<8) | ReadMem(adr)) - mA;
       if ((mFlags & FLAG_C) == 0) a--;
       mA = (a>>8) & 0xff;
-      Write(mA, adr+1);
-      Write(a & 0xff, adr);
+      WriteMem(mA, adr+1);
+      WriteMem(a & 0xff, adr);
       if ((a & 0xffff0000) != 0) mFlags &= ~FLAG_C; else mFlags |= FLAG_C;
       DoFlagZN(mA);
       break;
@@ -677,9 +677,9 @@ int DoInstruction() // handle all instructions
     case 83: // LLW
     {
       int adr = TakeAddr();
-      int a = ((Read(adr+1)<<8) | Read(adr))<<1;
+      int a = ((ReadMem(adr+1)<<8) | ReadMem(adr))<<1;
       mA = (a>>8) & 0xff;
-      Write(mA, adr+1); Write(a & 0xff, adr);
+      WriteMem(mA, adr+1); WriteMem(a & 0xff, adr);
       if ((a & 0x00010000) != 0) mFlags |= FLAG_C; else mFlags &= ~FLAG_C;
       DoFlagZN(mA);
       break;
@@ -687,10 +687,10 @@ int DoInstruction() // handle all instructions
     case 84: // RLW
     {
       int adr = TakeAddr();
-      int a = ((Read(adr+1)<<8) | Read(adr))<<1;
+      int a = ((ReadMem(adr+1)<<8) | ReadMem(adr))<<1;
       if ((mFlags & FLAG_C) != 0) a |= 1;
       mA = (a>>8) & 0xff;
-      Write(mA, adr+1); Write(a & 0xff, adr);
+      WriteMem(mA, adr+1); WriteMem(a & 0xff, adr);
       if ((a & 0x00010000) != 0) mFlags |= FLAG_C; else mFlags &= ~FLAG_C;
       DoFlagZN(mA);
       break;
@@ -700,46 +700,46 @@ int DoInstruction() // handle all instructions
       mA = 0; // devalidate A register
       int ret = mPC; // return address - 2 is put onto the stack
       int pc = TakeAddr();
-      int sp = Read(0xffff);
-      Write(ret, 0xff00 | sp);
-      Write(ret>>8, 0xff00 | (sp-1));
-      Write(sp-2, 0xffff);
+      int sp = ReadMem(0xffff);
+      WriteMem(ret, 0xff00 | sp);
+      WriteMem(ret>>8, 0xff00 | (sp-1));
+      WriteMem(sp-2, 0xffff);
       mPC = pc;
       break;
     }
     case 86: // RTS
     {
-      int sp = Read(0xffff);
-      mPC = Read(0xff00 | (sp+1))<<8;
-      mPC |= Read(0xff00 | (sp+2));
+      int sp = ReadMem(0xffff);
+      mPC = ReadMem(0xff00 | (sp+1))<<8;
+      mPC |= ReadMem(0xff00 | (sp+2));
       mPC += 2; // return address - 2 was put onto the stack
-      Write(sp+2, 0xffff);
+      WriteMem(sp+2, 0xffff);
       break;
     }
     case 87: // PHS
     {
-      int sp = Read(0xffff);
-      Write(mA, 0xff00 | sp);
-      Write(sp-1, 0xffff);
+      int sp = ReadMem(0xffff);
+      WriteMem(mA, 0xff00 | sp);
+      WriteMem(sp-1, 0xffff);
       break;
     }
     case 88: // PLS
     {
-      int sp = Read(0xffff);
-      mA = Read(0xff00 | sp+1) & 0xff;
-      Write(sp+1, 0xffff);
+      int sp = ReadMem(0xffff);
+      mA = ReadMem(0xff00 | sp+1) & 0xff;
+      WriteMem(sp+1, 0xffff);
       break;
     }
     case 89: // LDS
     {
-      int sp = Read(0xffff) + Read(mPC++);
-      mA = Read(0xff00 | sp);
+      int sp = ReadMem(0xffff) + ReadMem(mPC++);
+      mA = ReadMem(0xff00 | sp);
       break;
     }
     case 90: // STS
     {
-      int sp = Read(0xffff) + Read(mPC++);
-      Write(mA, 0xff00 | sp);
+      int sp = ReadMem(0xffff) + ReadMem(mPC++);
+      WriteMem(mA, 0xff00 | sp);
       break;
     }
     case 91: // BNE
@@ -790,91 +790,91 @@ int DoInstruction() // handle all instructions
       if ((mFlags & FLAG_C) == 0 || (mFlags & FLAG_Z) != 0) mPC = pc;
       break;
     }
-    case 99: Write(mA, 0xff00); break; // TAX
-    case 100: mA = Read(0xff00); break; // TXA
-    case 101: Write(Read(0xff00), 0xff01); break; // TXY
-    case 102: Write(Read(mPC++), 0xff00); break; // LXI
+    case 99: WriteMem(mA, 0xff00); break; // TAX
+    case 100: mA = ReadMem(0xff00); break; // TXA
+    case 101: WriteMem(ReadMem(0xff00), 0xff01); break; // TXY
+    case 102: WriteMem(ReadMem(mPC++), 0xff00); break; // LXI
     case 103: // LXA
     {
       int adr = TakeAddr();
-      Write(Read(adr), 0xff00);
+      WriteMem(ReadMem(adr), 0xff00);
       break;
     }
-    case 104: mA = Read(TakeAddr() + Read(0xff00)); break; // LAX
+    case 104: mA = ReadMem(TakeAddr() + ReadMem(0xff00)); break; // LAX
     case 105: // INX
     {
-      int a = Read(0xff00) + 1;
+      int a = ReadMem(0xff00) + 1;
       mA = a & 0xff;
-      Write(mA, 0xff00);
+      WriteMem(mA, 0xff00);
       DoFlagCAdd(a);
       DoFlagZN(mA);
       break;
     }
     case 106: // DEX
     {
-      int a = Read(0xff00) - 1;
+      int a = ReadMem(0xff00) - 1;
       mA = a & 0xff;
-      Write(mA, 0xff00);
+      WriteMem(mA, 0xff00);
       DoFlagCSub(a);
       DoFlagZN(mA);
       break;
     }
     case 107: // ADX
     {
-      int a = (mA & 0xff) + Read(0xff00);
+      int a = (mA & 0xff) + ReadMem(0xff00);
       mA = a & 0xff;
       DoFlagCAdd(a); DoFlagZN(mA);
       break;
     }
     case 108: // SBX
     {
-      int a = mA - Read(0xff00);
+      int a = mA - ReadMem(0xff00);
       mA = a & 0xff;
       DoFlagCSub(a); DoFlagZN(mA);
       break;
     }
     case 109: // CPX
     {
-      int a = mA - Read(0xff00);
+      int a = mA - ReadMem(0xff00);
       DoFlagCSub(a);
       DoFlagZN(a);
       break;
     }
-    case 110: mA &= Read(0xff00); break; // ANX
-    case 111: mA |= Read(0xff00); break; // ORX
-    case 112: mA ^= Read(0xff00); break; // XRX
-    case 113: Write(mA, 0xff01); break; // TAY
-    case 114: mA = Read(0xff01); break; // TYA
-    case 115: Write(Read(0xff01), 0xff00); break; // TYX
-    case 116: Write(Read(mPC++), 0xff01); break; // LYI
+    case 110: mA &= ReadMem(0xff00); break; // ANX
+    case 111: mA |= ReadMem(0xff00); break; // ORX
+    case 112: mA ^= ReadMem(0xff00); break; // XRX
+    case 113: WriteMem(mA, 0xff01); break; // TAY
+    case 114: mA = ReadMem(0xff01); break; // TYA
+    case 115: WriteMem(ReadMem(0xff01), 0xff00); break; // TYX
+    case 116: WriteMem(ReadMem(mPC++), 0xff01); break; // LYI
     case 117: // LYA
     {
       int adr = TakeAddr();
-      Write(Read(adr), 0xff01);
+      WriteMem(ReadMem(adr), 0xff01);
       break;
     }
-    case 118: mA = Read(TakeAddr() + Read(0xff01)); break; // LAY
+    case 118: mA = ReadMem(TakeAddr() + ReadMem(0xff01)); break; // LAY
     case 119: // INY
     {
-      int a = Read(0xff01) + 1;
+      int a = ReadMem(0xff01) + 1;
       mA = a & 0xff;
-      Write(mA, 0xff01);
+      WriteMem(mA, 0xff01);
       DoFlagCAdd(a);
       DoFlagZN(mA);
       break;
     }
     case 120: // DEY
     {
-      int a = Read(0xff01) - 1;
+      int a = ReadMem(0xff01) - 1;
       mA = a & 0xff;
-      Write(mA, 0xff01);
+      WriteMem(mA, 0xff01);
       DoFlagCSub(a);
       DoFlagZN(mA);
       break;
     }
     case 121: // ADY
     {
-      int a = mA + Read(0xff01);
+      int a = mA + ReadMem(0xff01);
       mA = a & 0xff;
       DoFlagCAdd(a);
       DoFlagZN(mA);
@@ -882,7 +882,7 @@ int DoInstruction() // handle all instructions
     }
     case 122: // SBY
     {
-      int a = mA - Read(0xff01);
+      int a = mA - ReadMem(0xff01);
       mA = a & 0xff;
       DoFlagCSub(a);
       DoFlagZN(mA);
@@ -890,14 +890,14 @@ int DoInstruction() // handle all instructions
     }
     case 123: // CPY
     {
-      int a = mA - Read(0xff01);
+      int a = mA - ReadMem(0xff01);
       DoFlagCSub(a);
       DoFlagZN(a);
       break;
     }
-    case 124: mA &= Read(0xff01); break; // ANY
-    case 125: mA |= Read(0xff01); break; // ORY
-    case 126: mA ^= Read(0xff01); break; // XRY
+    case 124: mA &= ReadMem(0xff01); break; // ANY
+    case 125: mA |= ReadMem(0xff01); break; // ORY
+    case 126: mA ^= ReadMem(0xff01); break; // XRY
     case 127: mPC--; break; // HLT
     default:;
   }
