@@ -4,17 +4,11 @@
 
 final int screenWidth = 1024;          // set the screen width (original size is 400 x 240 pixels)
 
-// function keys used by the emulator
-final int F12 = 108;                   // QUIT
-final int F11 = 107;                   // RESET
-final int F10 = 106;                   // PASTE clipboard data as serial input
-final int ALTGR = 19;
-
 import java.awt.Toolkit; // for clipboard access
 import java.awt.datatransfer.*; // for clipboard access
 import java.util.HashMap; // for PS2 code hash maps
 
-HashMap<Integer, byte[]> ps2ScanCodes = new HashMap<Integer, byte[]>();
+HashMap<Integer, Byte> ps2ScanCodes = new HashMap<Integer, Byte>();
 boolean[] keyPressedStates = new boolean[0x100]; // remember state of all keys (for repeat handling)
 long[] keyPressedTimestamps = new long[0x100]; // timestamps of keypresses
 ArrayList<Byte> serialInput = new ArrayList<Byte>();
@@ -26,16 +20,6 @@ int flashState=0; // determines the state of a write operation to FLASH (see SSF
 byte[] mFlash; byte[] mRam = new byte[0x10000]; // memory of the CPU
 int mBank=0, mA=0, mFlags=0, mPC=0; // register states of the CPU
 
-final int FLAG_Z = 1; // zero flag
-final int FLAG_C = 2; // carry flag
-final int FLAG_N = 4; // negative flag
-
-final int[] clocksPerInstruction = { // clock cycles used per instruction
-  16, 4, 4, 6, 5, 5, 4, 6, 6, 5, 5, 5, 5, 5, 6, 7, 8, 9, 10, 11, 13, 5, 6, 7, 8, 9, 10, 11, 12, 5, 5, 5,
-  5, 5, 5, 5, 5, 12, 5, 7, 7, 8, 8, 8, 8, 8, 8, 8, 15, 8, 10, 10, 11, 11, 11, 11, 11, 11, 11, 8, 9, 9, 9, 9,
-  8, 9, 8, 9, 8, 8, 8, 8, 8, 8, 9, 11, 11, 11, 12, 11, 12, 11, 12, 10, 10, 14, 12, 11, 7, 8, 15, 5, 5, 5, 5, 5,  
-  5, 5, 5, 6, 6, 7, 7, 10, 13, 7, 7, 7, 7, 7, 7, 7, 13, 7, 7, 10, 8, 11, 14, 8, 8, 8, 8, 8, 8, 8, 14, 6 };
-
 // -------------------------------------------------------------------------------------------------
 
 void settings() { size(screenWidth, screenWidth*240/400, P2D); }
@@ -45,66 +29,68 @@ void setup()
   if ((mFlash = loadBytes("flash.bin")) == null || mFlash.length != 0x80000) exit(); // load the flash.bin image into FLASH
   surface.setTitle("Minimal 64 Emulator - F12: QUIT, F11: RESET, F10: PASTE clipboard data as serial input.");
 
-  ps2ScanCodes.put((int)'A', new byte[] {(byte)0x1C});  // init PS2 scan codes to be emitted (german keyboard layout)
-  ps2ScanCodes.put((int)'B', new byte[] {(byte)0x32});
-  ps2ScanCodes.put((int)'C', new byte[] {(byte)0x21});
-  ps2ScanCodes.put((int)'D', new byte[] {(byte)0x23});
-  ps2ScanCodes.put((int)'E', new byte[] {(byte)0x24});
-  ps2ScanCodes.put((int)'F', new byte[] {(byte)0x2B});
-  ps2ScanCodes.put((int)'G', new byte[] {(byte)0x34});
-  ps2ScanCodes.put((int)'H', new byte[] {(byte)0x33});
-  ps2ScanCodes.put((int)'I', new byte[] {(byte)0x43});
-  ps2ScanCodes.put((int)'J', new byte[] {(byte)0x3B});
-  ps2ScanCodes.put((int)'K', new byte[] {(byte)0x42});
-  ps2ScanCodes.put((int)'L', new byte[] {(byte)0x4B});
-  ps2ScanCodes.put((int)'M', new byte[] {(byte)0x3A});
-  ps2ScanCodes.put((int)'N', new byte[] {(byte)0x31});
-  ps2ScanCodes.put((int)'O', new byte[] {(byte)0x44});
-  ps2ScanCodes.put((int)'P', new byte[] {(byte)0x4D});
-  ps2ScanCodes.put((int)'Q', new byte[] {(byte)0x15});
-  ps2ScanCodes.put((int)'R', new byte[] {(byte)0x2D});
-  ps2ScanCodes.put((int)'S', new byte[] {(byte)0x1B});
-  ps2ScanCodes.put((int)'T', new byte[] {(byte)0x2C});
-  ps2ScanCodes.put((int)'U', new byte[] {(byte)0x3C});
-  ps2ScanCodes.put((int)'V', new byte[] {(byte)0x2A});
-  ps2ScanCodes.put((int)'W', new byte[] {(byte)0x1D});
-  ps2ScanCodes.put((int)'X', new byte[] {(byte)0x22});
-  ps2ScanCodes.put((int)'Y', new byte[] {(byte)0x35});
-  ps2ScanCodes.put((int)'Z', new byte[] {(byte)0x1A});
-  ps2ScanCodes.put((int)'0', new byte[] {(byte)0x45});
-  ps2ScanCodes.put((int)'1', new byte[] {(byte)0x16});
-  ps2ScanCodes.put((int)'2', new byte[] {(byte)0x1E});
-  ps2ScanCodes.put((int)'3', new byte[] {(byte)0x26});
-  ps2ScanCodes.put((int)'4', new byte[] {(byte)0x25});
-  ps2ScanCodes.put((int)'5', new byte[] {(byte)0x2E});
-  ps2ScanCodes.put((int)'6', new byte[] {(byte)0x36});
-  ps2ScanCodes.put((int)'7', new byte[] {(byte)0x3D});
-  ps2ScanCodes.put((int)'8', new byte[] {(byte)0x3E});
-  ps2ScanCodes.put((int)'9', new byte[] {(byte)0x46});  
-  ps2ScanCodes.put((int)' ', new byte[] {(byte)0x29}); // SPACE
-  ps2ScanCodes.put((int)',', new byte[] {(byte)0x41}); // COMMA
-  ps2ScanCodes.put((int)'.', new byte[] {(byte)0x49}); // DECIMAL
-
-  ps2ScanCodes.put((int)ENTER, new byte[] {(byte)0x5A});
-  ps2ScanCodes.put((int)ESC, new byte[] {(byte)0x76});
-  ps2ScanCodes.put((int)TAB, new byte[] {(byte)0x0D});
-  ps2ScanCodes.put((int)BACKSPACE, new byte[] {(byte)0x66});
-  ps2ScanCodes.put((int)DELETE, new byte[] {(byte)0xE0, (byte)0x71});
-  ps2ScanCodes.put((int)UP, new byte[] {(byte)0xE0, (byte)0x75});
-  ps2ScanCodes.put((int)DOWN, new byte[] {(byte)0xE0, (byte)0x72});
-  ps2ScanCodes.put((int)LEFT, new byte[] {(byte)0xE0, (byte)0x6B});
-  ps2ScanCodes.put((int)RIGHT, new byte[] {(byte)0xE0, (byte)0x74});
-
-  ps2ScanCodes.put(2, new byte[] {(byte)0xE0, (byte)0x6C}); // HOME (POS1)
-  ps2ScanCodes.put(3, new byte[] {(byte)0xE0, (byte)0x69}); // END
-  ps2ScanCodes.put(16, new byte[] {(byte)0xE0, (byte)0x7D}); // PAGE_UP
-  ps2ScanCodes.put(11, new byte[] {(byte)0xE0, (byte)0x7A}); // PAGE_DOWN
-  ps2ScanCodes.put(47, new byte[] {(byte)0x4A}); // MINUS
-  ps2ScanCodes.put(92, new byte[] {(byte)0x5D}); // HASH
-  ps2ScanCodes.put(93, new byte[] {(byte)0x5B}); // PLUS
-  ps2ScanCodes.put(0, new byte[] {(byte)0x61}); // LESS/GREATER/PIPE
-  ps2ScanCodes.put(45, new byte[] {(byte)0x4E}); // BACKSLASH  
-  ps2ScanCodes.put(96, new byte[] {(byte)0x0E}); // POWER 
+  ps2ScanCodes.put((int)'A', (byte)0x1C); // init PS2 scan codes to be emitted (german keyboard layout)
+  ps2ScanCodes.put((int)'B', (byte)0x32); // all preceeding 0xE0 codes are omitted since MinOS ignores them anyway
+  ps2ScanCodes.put((int)'C', (byte)0x21);
+  ps2ScanCodes.put((int)'D', (byte)0x23);
+  ps2ScanCodes.put((int)'E', (byte)0x24);
+  ps2ScanCodes.put((int)'F', (byte)0x2B);
+  ps2ScanCodes.put((int)'G', (byte)0x34);
+  ps2ScanCodes.put((int)'H', (byte)0x33);
+  ps2ScanCodes.put((int)'I', (byte)0x43);
+  ps2ScanCodes.put((int)'J', (byte)0x3B);
+  ps2ScanCodes.put((int)'K', (byte)0x42);
+  ps2ScanCodes.put((int)'L', (byte)0x4B);
+  ps2ScanCodes.put((int)'M', (byte)0x3A);
+  ps2ScanCodes.put((int)'N', (byte)0x31);
+  ps2ScanCodes.put((int)'O', (byte)0x44);
+  ps2ScanCodes.put((int)'P', (byte)0x4D);
+  ps2ScanCodes.put((int)'Q', (byte)0x15);
+  ps2ScanCodes.put((int)'R', (byte)0x2D);
+  ps2ScanCodes.put((int)'S', (byte)0x1B);
+  ps2ScanCodes.put((int)'T', (byte)0x2C);
+  ps2ScanCodes.put((int)'U', (byte)0x3C);
+  ps2ScanCodes.put((int)'V', (byte)0x2A);
+  ps2ScanCodes.put((int)'W', (byte)0x1D);
+  ps2ScanCodes.put((int)'X', (byte)0x22);
+  ps2ScanCodes.put((int)'Y', (byte)0x35);
+  ps2ScanCodes.put((int)'Z', (byte)0x1A);
+  ps2ScanCodes.put((int)'0', (byte)0x45);
+  ps2ScanCodes.put((int)'1', (byte)0x16);
+  ps2ScanCodes.put((int)'2', (byte)0x1E);
+  ps2ScanCodes.put((int)'3', (byte)0x26);
+  ps2ScanCodes.put((int)'4', (byte)0x25);
+  ps2ScanCodes.put((int)'5', (byte)0x2E);
+  ps2ScanCodes.put((int)'6', (byte)0x36);
+  ps2ScanCodes.put((int)'7', (byte)0x3D);
+  ps2ScanCodes.put((int)'8', (byte)0x3E);
+  ps2ScanCodes.put((int)'9', (byte)0x46);  
+  ps2ScanCodes.put((int)' ', (byte)0x29);
+  ps2ScanCodes.put((int)',', (byte)0x41);
+  ps2ScanCodes.put((int)'.', (byte)0x49);
+  ps2ScanCodes.put((int)ENTER, (byte)0x5A);
+  ps2ScanCodes.put((int)ESC, (byte)0x76);
+  ps2ScanCodes.put((int)TAB, (byte)0x0D);
+  ps2ScanCodes.put((int)BACKSPACE, (byte)0x66);
+  ps2ScanCodes.put((int)DELETE, (byte)0x71);
+  ps2ScanCodes.put(0x80 | UP, (byte)0x75); // 0x80 marks CODED keys
+  ps2ScanCodes.put(0x80 | DOWN, (byte)0x72);
+  ps2ScanCodes.put(0x80 | LEFT, (byte)0x6B);
+  ps2ScanCodes.put(0x80 | RIGHT, (byte)0x74);
+  ps2ScanCodes.put(0x80 | SHIFT, (byte)0x12);
+  ps2ScanCodes.put(0x80 | CONTROL, (byte)0x14);
+  ps2ScanCodes.put(0x80 | ALT, (byte)0x11);
+  ps2ScanCodes.put(19, (byte)0x11); // ALTGR
+  ps2ScanCodes.put(2, (byte)0x6C); // HOME/POS1
+  ps2ScanCodes.put(3, (byte)0x69); // END
+  ps2ScanCodes.put(16, (byte)0x7D); // PAGE_UP
+  ps2ScanCodes.put(11, (byte)0x7A); // PAGE_DOWN
+  ps2ScanCodes.put(47, (byte)0x4A); // MINUS
+  ps2ScanCodes.put(92, (byte)0x5D); // HASH
+  ps2ScanCodes.put(93, (byte)0x5B); // PLUS
+  ps2ScanCodes.put(0, (byte)0x61); // LESS/GREATER/PIPE
+  ps2ScanCodes.put(45, (byte)0x4E); // BACKSLASH  
+  ps2ScanCodes.put(96, (byte)0x0E); // POWER 
 }
 
 void draw()
@@ -129,19 +115,34 @@ void draw()
 
 // -------------------------------------------------------------------------------------------------
 
+void handleKeyRepeat()
+{
+  long currentTime = millis();
+  for (int i = 0; i < keyPressedStates.length; i++)
+  {
+    if (keyPressedStates[i] && currentTime - keyPressedTimestamps[i] > 260) // delayTime
+    {
+      keyPressedTimestamps[i] = currentTime - 260 + 60; // - delayTime + repeatTime
+      if (ps2ScanCodes.get(i) != null) ps2Input.add(ps2ScanCodes.get(i));
+    }
+  }
+}
+
 void keyReleased() // handle key release event
 {
-  keyPressedStates[keyCode & 0xff] = false;
-  convertKeyCodeToPS2(false);
+  keyCode = (key == CODED ? 0x80 : 0x00) | keyCode & 0xff; // mark keyCodes as 'CODED'
+  keyPressedStates[keyCode] = false;
+  if (ps2ScanCodes.get(keyCode) != null) { ps2Input.add((byte)0xf0); ps2Input.add(ps2ScanCodes.get(keyCode)); } // emit 'release' scancode
 }
 
 void keyPressed() // handle keypress event
 {
+  keyCode = (key == CODED ? 0x80 : 0x00) | keyCode & 0xff; // mark keyCodes as 'CODED'
   switch(keyCode)
   {
-    case F12: saveBytes("flash.bin", mFlash); exit(); // EXIT
-    case F11: mPC = 0; mBank = 0; break; // RESET
-    case F10: // PASTE clipboard data as serial input
+    case 108: saveBytes("flash.bin", mFlash); exit(); // F12: EXIT
+    case 107: mPC = 0; mBank = 0; break;              // F11: RESET
+    case 106:                                         // F10: PASTE clipboard data as serial input
     {
       java.awt.datatransfer.Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard(); // Get the system clipboard
       if (clipboard.isDataFlavorAvailable(DataFlavor.stringFlavor)) // Check if the clipboard contains text
@@ -157,40 +158,11 @@ void keyPressed() // handle keypress event
       break;
     }
     default: // convert keypresses to PS2 input
-      keyPressedStates[keyCode & 0xff] = true; // note the changed state of the key
-      keyPressedTimestamps[keyCode & 0xff] = millis(); // note the timestamp the key was pressed
-      convertKeyCodeToPS2(true);
+      keyPressedStates[keyCode] = true; // note the changed state of the key
+      keyPressedTimestamps[keyCode] = millis(); // note the timestamp the key was pressed
+      if (ps2ScanCodes.get(keyCode) != null) ps2Input.add(ps2ScanCodes.get(keyCode));
+      if (key == 27) key = 0; // disable Processing's ESC function
       break;
-  }
-  
-  if (key == 27) key = 0; // disable Processing's ESC function
-}
-
-void handleKeyRepeat()
-{
-  long currentTime = millis();
-  for (int i = 0; i < keyPressedStates.length; i++)
-  {
-    if (keyPressedStates[i] && currentTime - keyPressedTimestamps[i] > 260) // delayTime
-    {
-      keyPressedTimestamps[i] = currentTime - 260 + 60; // - delayTime + repeatTime
-      keyCode = i; convertKeyCodeToPS2(true); // simulate a repeating key
-    }
-  }
-}
-
-void convertKeyCodeToPS2(boolean isPressed) // convert Processing's keyCodes/key into PS2 scancodes
-{   
-  if (isPressed == false) ps2Input.add((byte)(0xf0)); // emit PS2 'release' scancode before emitting actual key scan codes
-  
-  if (keyCode == SHIFT && key == CODED) { ps2Input.add((byte)(0x12)); return; } // handle special keys SHIFT, CTRL, ALT, ALTGR first
-  else if (keyCode == CONTROL && key == CODED) { ps2Input.add((byte)(0x14)); return; }
-  else if (keyCode == ALT && key == CODED) { ps2Input.add((byte)(0x11)); return; }
-  else if (keyCode == ALTGR && key != CODED) { ps2Input.add((byte)(0x11)); return; }
-  else // emit PS2 scan codes for all other keys
-  {
-    byte[] scanCode = ps2ScanCodes.get(keyCode);
-    if (scanCode != null) for (byte c : scanCode) ps2Input.add(c);
   }
 }
 
@@ -227,6 +199,10 @@ void WriteMem(int b, int at) // writes a byte to memory (either FLASH or RAM), e
   }
 }
 
+final int FLAG_Z = 1; // zero flag
+final int FLAG_C = 2; // carry flag
+final int FLAG_N = 4; // negative flag
+
 void DoFlagZN(int a) // update the Z and N flag
 {
   if ((a & 0xff) == 0) mFlags |= FLAG_Z; else mFlags &= ~FLAG_Z;
@@ -238,6 +214,12 @@ int TakeAddr() { return ReadMem(mPC++) | (ReadMem(mPC++) << 8); } // consume a 1
 int GetAddr(int adr) { return ReadMem(adr++) | (ReadMem(adr++) << 8); } // get a 16-bit relative address
 
 // -------------------------------------------------------------------------------------------------
+
+final int[] clocksPerInstruction = { // clock cycles used per instruction
+  16, 4, 4, 6, 5, 5, 4, 6, 6, 5, 5, 5, 5, 5, 6, 7, 8, 9, 10, 11, 13, 5, 6, 7, 8, 9, 10, 11, 12, 5, 5, 5,
+  5, 5, 5, 5, 5, 12, 5, 7, 7, 8, 8, 8, 8, 8, 8, 8, 15, 8, 10, 10, 11, 11, 11, 11, 11, 11, 11, 8, 9, 9, 9, 9,
+  8, 9, 8, 9, 8, 8, 8, 8, 8, 8, 9, 11, 11, 11, 12, 11, 12, 11, 12, 10, 10, 14, 12, 11, 7, 8, 15, 5, 5, 5, 5, 5,  
+  5, 5, 5, 6, 6, 7, 7, 10, 13, 7, 7, 7, 7, 7, 7, 7, 13, 7, 7, 10, 8, 11, 14, 8, 8, 8, 8, 8, 8, 8, 14, 6 };
 
 int DoInstruction() // handle all instructions
 {
