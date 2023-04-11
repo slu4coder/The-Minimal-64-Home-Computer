@@ -30,4 +30,4 @@ My YouTube channel: https://www.youtube.com/channel/UCXYQcMpUBT3aaQKfmAVJNow
 
 Reference Manual: https://docs.google.com/document/d/1e4hL9Z7BLIoUlErWgJOngnSMYLXjfnsZB9BtlwhTC6U/edit?usp=sharing
 
-Like my stuff and want to give something back? https://www.paypal.me/carstenherting
+https://www.paypal.me/carstenherting
