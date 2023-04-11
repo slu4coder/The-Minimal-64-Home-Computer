@@ -5,9 +5,10 @@
 final int screenWidth = 1024;          // set the screen width (original size is 400 x 240 pixels)
 
 // function keys used by the emulator
-final int KEYCODE_F12 = 108;           // QUIT
-final int KEYCODE_F11 = 107;           // RESET
-final int KEYCODE_F10 = 106;           // PASTE clipboard data as serial input
+final int F12 = 108;                   // QUIT
+final int F11 = 107;                   // RESET
+final int F10 = 106;                   // PASTE clipboard data as serial input
+final int ALTGR = 19;
 
 import java.awt.Toolkit; // for clipboard access
 import java.awt.datatransfer.*; // for clipboard access
@@ -80,22 +81,24 @@ void setup()
   ps2ScanCodes.put((int)'7', new byte[] {(byte)0x3D});
   ps2ScanCodes.put((int)'8', new byte[] {(byte)0x3E});
   ps2ScanCodes.put((int)'9', new byte[] {(byte)0x46});  
-  ps2ScanCodes.put((int)' ', new byte[] {(byte)0x29});
+  ps2ScanCodes.put((int)' ', new byte[] {(byte)0x29}); // SPACE
+  ps2ScanCodes.put((int)',', new byte[] {(byte)0x41}); // COMMA
+  ps2ScanCodes.put((int)'.', new byte[] {(byte)0x49}); // DECIMAL
+
   ps2ScanCodes.put((int)ENTER, new byte[] {(byte)0x5A});
   ps2ScanCodes.put((int)ESC, new byte[] {(byte)0x76});
   ps2ScanCodes.put((int)TAB, new byte[] {(byte)0x0D});
-  ps2ScanCodes.put((int)java.awt.event.KeyEvent.VK_BACK_SPACE, new byte[] {(byte)0x66});
-  ps2ScanCodes.put((int)java.awt.event.KeyEvent.VK_DELETE, new byte[] {(byte)0xE0, (byte)0x71});
-  ps2ScanCodes.put((int)java.awt.event.KeyEvent.VK_UP, new byte[] {(byte)0xE0, (byte)0x75});
-  ps2ScanCodes.put((int)java.awt.event.KeyEvent.VK_DOWN, new byte[] {(byte)0xE0, (byte)0x72});
-  ps2ScanCodes.put((int)java.awt.event.KeyEvent.VK_LEFT, new byte[] {(byte)0xE0, (byte)0x6B});
-  ps2ScanCodes.put((int)java.awt.event.KeyEvent.VK_RIGHT, new byte[] {(byte)0xE0, (byte)0x74});
+  ps2ScanCodes.put((int)BACKSPACE, new byte[] {(byte)0x66});
+  ps2ScanCodes.put((int)DELETE, new byte[] {(byte)0xE0, (byte)0x71});
+  ps2ScanCodes.put((int)UP, new byte[] {(byte)0xE0, (byte)0x75});
+  ps2ScanCodes.put((int)DOWN, new byte[] {(byte)0xE0, (byte)0x72});
+  ps2ScanCodes.put((int)LEFT, new byte[] {(byte)0xE0, (byte)0x6B});
+  ps2ScanCodes.put((int)RIGHT, new byte[] {(byte)0xE0, (byte)0x74});
+
   ps2ScanCodes.put(2, new byte[] {(byte)0xE0, (byte)0x6C}); // HOME (POS1)
   ps2ScanCodes.put(3, new byte[] {(byte)0xE0, (byte)0x69}); // END
   ps2ScanCodes.put(16, new byte[] {(byte)0xE0, (byte)0x7D}); // PAGE_UP
   ps2ScanCodes.put(11, new byte[] {(byte)0xE0, (byte)0x7A}); // PAGE_DOWN
-  ps2ScanCodes.put((int)',', new byte[] {(byte)0x41}); // COMMA
-  ps2ScanCodes.put((int)'.', new byte[] {(byte)0x49}); // DECIMAL
   ps2ScanCodes.put(47, new byte[] {(byte)0x4A}); // MINUS
   ps2ScanCodes.put(92, new byte[] {(byte)0x5D}); // HASH
   ps2ScanCodes.put(93, new byte[] {(byte)0x5B}); // PLUS
@@ -136,9 +139,9 @@ void keyPressed() // handle keypress event
 {
   switch(keyCode)
   {
-    case KEYCODE_F12: saveBytes("flash.bin", mFlash); exit(); // EXIT
-    case KEYCODE_F11: mPC = 0; mBank = 0; break; // RESET
-    case KEYCODE_F10: // PASTE clipboard data as serial input
+    case F12: saveBytes("flash.bin", mFlash); exit(); // EXIT
+    case F11: mPC = 0; mBank = 0; break; // RESET
+    case F10: // PASTE clipboard data as serial input
     {
       java.awt.datatransfer.Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard(); // Get the system clipboard
       if (clipboard.isDataFlavorAvailable(DataFlavor.stringFlavor)) // Check if the clipboard contains text
@@ -183,7 +186,7 @@ void convertKeyCodeToPS2(boolean isPressed) // convert Processing's keyCodes/key
   if (keyCode == SHIFT && key == CODED) { ps2Input.add((byte)(0x12)); return; } // handle special keys SHIFT, CTRL, ALT, ALTGR first
   else if (keyCode == CONTROL && key == CODED) { ps2Input.add((byte)(0x14)); return; }
   else if (keyCode == ALT && key == CODED) { ps2Input.add((byte)(0x11)); return; }
-  else if (keyCode == 19 && key != CODED) { ps2Input.add((byte)(0x11)); return; }
+  else if (keyCode == ALTGR && key != CODED) { ps2Input.add((byte)(0x11)); return; }
   else // emit PS2 scan codes for all other keys
   {
     byte[] scanCode = ps2ScanCodes.get(keyCode);
@@ -229,11 +232,10 @@ void DoFlagZN(int a) // update the Z and N flag
   if ((a & 0xff) == 0) mFlags |= FLAG_Z; else mFlags &= ~FLAG_Z;
   if ((a & 0x80) != 0) mFlags |= FLAG_N; else mFlags &= ~FLAG_N;
 }
-void DoFlagCAdd(int a) { if ((a & 0xffffff00) != 0) mFlags |= FLAG_C; else mFlags &= ~FLAG_C; } // handle C during addition
-void DoFlagCSub(int a) { if ((a & 0xffffff00) != 0) mFlags &= ~FLAG_C; else mFlags |= FLAG_C; } // handle C during subtraction
+void DoFlagC(int a, boolean isAdd) { mFlags = (((a & 0xffffff00) != 0) ^ isAdd) ? (mFlags & ~FLAG_C) : (mFlags | FLAG_C) ; }
 void DoFlagCLikeZ() { int c = (mFlags & FLAG_Z)<<1; mFlags = (mFlags & 5) | c; } // make C=Z
-int TakeAddr() { int a = ReadMem(mPC++); a |= ReadMem(mPC++)<<8; return a; } // consume a 16-bit absolute address from program counter (mPC)
-int GetAddr(int adr) { int a = ReadMem(adr++); a |= (ReadMem(adr++)<<8); return a; } // get a 16-bit relative address
+int TakeAddr() { return ReadMem(mPC++) | (ReadMem(mPC++) << 8); } // consume a 16-bit absolute address from program counter (mPC)
+int GetAddr(int adr) { return ReadMem(adr++) | (ReadMem(adr++) << 8); } // get a 16-bit relative address
 
 // -------------------------------------------------------------------------------------------------
 
@@ -258,14 +260,12 @@ int DoInstruction() // handle all instructions
     case 7: mA = (~mA) & 0xff; break; // NOT
     case 8:  // NEG
       mA = (-mA) & 0xff;
-      DoFlagZN(mA);
-      DoFlagCLikeZ();
+      DoFlagZN(mA); DoFlagCLikeZ();
       break;
     case 9: // INC
       mA++;
       mA &= 0xff;
-      DoFlagZN(mA);
-      DoFlagCLikeZ();
+      DoFlagZN(mA); DoFlagCLikeZ();
       break;
     case 10: // DEC
       mA--; mA &= 0xff;
@@ -316,15 +316,14 @@ int DoInstruction() // handle all instructions
     {
       int a = (mA & 0xff) + ReadMem(mPC++);
       mA = a & 0xff;
-      DoFlagCAdd(a); DoFlagZN(mA);
+      DoFlagC(a, true); DoFlagZN(a);
       break;
     }
     case 31: // SBI
     {
       int a = mA - ReadMem(mPC++);
       mA = a & 0xff;
-      DoFlagCSub(a);
-      DoFlagZN(mA);
+      DoFlagC(a, false); DoFlagZN(a);
       break;
     }
     case 32: // ACI
@@ -332,7 +331,7 @@ int DoInstruction() // handle all instructions
       int a = mA + ReadMem(mPC++);
       if ((mFlags & FLAG_C) != 0) a++;
       mA = a & 0xff;
-      DoFlagCAdd(a); DoFlagZN(mA);
+      DoFlagC(a, true); DoFlagZN(a);
       break;
     }
     case 33: // SCI
@@ -340,15 +339,13 @@ int DoInstruction() // handle all instructions
       int a = mA - ReadMem(mPC++);
       if ((mFlags & FLAG_C) == 0) a--;
       mA = a & 0xff;
-      DoFlagCSub(a);
-      DoFlagZN(mA);
+      DoFlagC(a, false); DoFlagZN(a);
       break;
     }
     case 34: // CPI
     {
       int a = mA - ReadMem(mPC++);
-      DoFlagCSub(a);
-      DoFlagZN(a);
+      DoFlagC(a, false); DoFlagZN(a);
       break;
     }
     case 35: mA &= ReadMem(mPC++); break; // ANI
@@ -361,15 +358,14 @@ int DoInstruction() // handle all instructions
     {
       int a = mA + ReadMem(TakeAddr());
       mA = a & 0xff;
-      DoFlagCAdd(a);
-      DoFlagZN(mA);
+      DoFlagC(a, true); DoFlagZN(a);
       break;
     }
     case 42: // SBA
     {
       int a = mA - ReadMem(TakeAddr());
       mA = a & 0xff;
-      DoFlagCSub(a); DoFlagZN(mA);
+      DoFlagC(a, false); DoFlagZN(a);
       break;
     }
     case 43: // ACA
@@ -377,7 +373,7 @@ int DoInstruction() // handle all instructions
       int a = mA + ReadMem(TakeAddr());
       if ((mFlags & FLAG_C) != 0) a++;
       mA = a & 0xff;
-      DoFlagCAdd(a); DoFlagZN(mA);
+      DoFlagC(a, true); DoFlagZN(a);
       break;
     }
     case 44: // SCA
@@ -385,15 +381,13 @@ int DoInstruction() // handle all instructions
       int a = mA - ReadMem(TakeAddr());
       if ((mFlags & FLAG_C) == 0) a--;
       mA = a & 0xff;
-      DoFlagCSub(a);
-      DoFlagZN(mA);
+      DoFlagC(a, false); DoFlagZN(a);
       break;
     }
     case 45: // CPA
     {
       int a = mA - ReadMem(TakeAddr());
-      DoFlagCSub(a);
-      DoFlagZN(a);
+      DoFlagC(a, false); DoFlagZN(a);
       break;
     }
     case 46: mA &= ReadMem(TakeAddr()); break; // ANA
@@ -406,15 +400,14 @@ int DoInstruction() // handle all instructions
     {
       int a = mA + ReadMem(GetAddr(TakeAddr()));
       mA = a & 0xff;
-      DoFlagCAdd(a);
-      DoFlagZN(mA);
+      DoFlagC(a, true); DoFlagZN(a);
       break;
     }
     case 53: // SBR
     {
       int a = mA - ReadMem(GetAddr(TakeAddr()));
       mA = a & 0xff;
-      DoFlagCSub(a); DoFlagZN(mA);
+      DoFlagC(a, false); DoFlagZN(a);
       break;
     }
     case 54: // ACR
@@ -422,8 +415,7 @@ int DoInstruction() // handle all instructions
       int a = mA + ReadMem(GetAddr(TakeAddr()));
       if ((mFlags & FLAG_C) != 0) a++;
       mA = a & 0xff;
-      DoFlagCAdd(a);
-      DoFlagZN(mA);
+      DoFlagC(a, true); DoFlagZN(a);
       break;
     }
     case 55: // SCR
@@ -431,14 +423,13 @@ int DoInstruction() // handle all instructions
       int a = (mA & 0xff) - ReadMem(GetAddr(TakeAddr()));
       if ((mFlags & FLAG_C) == 0) a--;
       mA = a & 0xff;
-      DoFlagCSub(a); DoFlagZN(mA);
+      DoFlagC(a, false); DoFlagZN(a);
       break;
     }
     case 56: // CPR
     {
       int a = mA - ReadMem(GetAddr(TakeAddr()));
-      DoFlagCSub(a);
-      DoFlagZN(a);
+      DoFlagC(a, false); DoFlagZN(a);
       break;
     }
     case 57: mA &= ReadMem(GetAddr(TakeAddr())); break; // ANR
@@ -466,8 +457,7 @@ int DoInstruction() // handle all instructions
       int a = ReadMem(adr) + 1;
       mA = a & 0xff;
       WriteMem(mA, adr);
-      DoFlagCAdd(a);
-      DoFlagZN(mA);
+      DoFlagC(a, true); DoFlagZN(a);
       break;
     }
     case 63: // DEB
@@ -476,7 +466,7 @@ int DoInstruction() // handle all instructions
       int a = ReadMem(adr) - 1;
       mA = a & 0xff;
       WriteMem(mA, adr);
-      DoFlagCSub(a); DoFlagZN(mA);
+      DoFlagC(a, false); DoFlagZN(a);
       break;
     }
     case 64: // ADB
@@ -485,8 +475,7 @@ int DoInstruction() // handle all instructions
       int a = ReadMem(adr) + mA;
       mA = a & 0xff;
       WriteMem(mA, adr);
-      DoFlagCAdd(a);
-      DoFlagZN(mA);
+      DoFlagC(a, true); DoFlagZN(a);
       break;
     }
     case 65: // SBB
@@ -495,7 +484,7 @@ int DoInstruction() // handle all instructions
       int a = ReadMem(adr) - mA;
       mA = a & 0xff;
       WriteMem(mA, adr);
-      DoFlagCSub(a); DoFlagZN(mA);
+      DoFlagC(a, false); DoFlagZN(a);
       break;
     }
     case 66: // ACB
@@ -505,8 +494,7 @@ int DoInstruction() // handle all instructions
       if ((mFlags & FLAG_C) != 0) a++;
       mA = a & 0xff;
       WriteMem(mA, adr);
-      DoFlagCAdd(a);
-      DoFlagZN(mA);
+      DoFlagC(a, true); DoFlagZN(a);
       break;
     }
     case 67: // SCB
@@ -516,8 +504,7 @@ int DoInstruction() // handle all instructions
       if ((mFlags & FLAG_C) == 0) a--;
       mA = a & 0xff;
       WriteMem(mA, adr);
-      DoFlagCSub(a);
-      DoFlagZN(mA);
+      DoFlagC(a, false); DoFlagZN(a);
       break;
     }
     case 68: // ANB
@@ -599,8 +586,7 @@ int DoInstruction() // handle all instructions
       mA = (a>>8) & 0xff;
       WriteMem(mA, adr+1);
       WriteMem(a & 0xff, adr);
-      DoFlagZN(mA);
-      DoFlagCLikeZ();
+      DoFlagZN(mA); DoFlagCLikeZ();
       break;
     }
     case 77: // INW
@@ -800,8 +786,7 @@ int DoInstruction() // handle all instructions
       int a = ReadMem(0xff00) + 1;
       mA = a & 0xff;
       WriteMem(mA, 0xff00);
-      DoFlagCAdd(a);
-      DoFlagZN(mA);
+      DoFlagC(a, true); DoFlagZN(a);
       break;
     }
     case 106: // DEX
@@ -809,29 +794,27 @@ int DoInstruction() // handle all instructions
       int a = ReadMem(0xff00) - 1;
       mA = a & 0xff;
       WriteMem(mA, 0xff00);
-      DoFlagCSub(a);
-      DoFlagZN(mA);
+      DoFlagC(a, false); DoFlagZN(a);
       break;
     }
     case 107: // ADX
     {
       int a = (mA & 0xff) + ReadMem(0xff00);
       mA = a & 0xff;
-      DoFlagCAdd(a); DoFlagZN(mA);
+      DoFlagC(a, true); DoFlagZN(a);
       break;
     }
     case 108: // SBX
     {
       int a = mA - ReadMem(0xff00);
       mA = a & 0xff;
-      DoFlagCSub(a); DoFlagZN(mA);
+      DoFlagC(a, false); DoFlagZN(a);
       break;
     }
     case 109: // CPX
     {
       int a = mA - ReadMem(0xff00);
-      DoFlagCSub(a);
-      DoFlagZN(a);
+      DoFlagC(a, false); DoFlagZN(a);
       break;
     }
     case 110: mA &= ReadMem(0xff00); break; // ANX
@@ -853,8 +836,7 @@ int DoInstruction() // handle all instructions
       int a = ReadMem(0xff01) + 1;
       mA = a & 0xff;
       WriteMem(mA, 0xff01);
-      DoFlagCAdd(a);
-      DoFlagZN(mA);
+      DoFlagC(a, true); DoFlagZN(a);
       break;
     }
     case 120: // DEY
@@ -862,31 +844,27 @@ int DoInstruction() // handle all instructions
       int a = ReadMem(0xff01) - 1;
       mA = a & 0xff;
       WriteMem(mA, 0xff01);
-      DoFlagCSub(a);
-      DoFlagZN(mA);
+      DoFlagC(a, false); DoFlagZN(a);
       break;
     }
     case 121: // ADY
     {
       int a = mA + ReadMem(0xff01);
       mA = a & 0xff;
-      DoFlagCAdd(a);
-      DoFlagZN(mA);
+      DoFlagC(a, true); DoFlagZN(a);
       break;
     }
     case 122: // SBY
     {
       int a = mA - ReadMem(0xff01);
       mA = a & 0xff;
-      DoFlagCSub(a);
-      DoFlagZN(mA);
+      DoFlagC(a, false); DoFlagZN(a);
       break;
     }
     case 123: // CPY
     {
       int a = mA - ReadMem(0xff01);
-      DoFlagCSub(a);
-      DoFlagZN(a);
+      DoFlagC(a, false); DoFlagZN(a);
       break;
     }
     case 124: mA &= ReadMem(0xff01); break; // ANY
