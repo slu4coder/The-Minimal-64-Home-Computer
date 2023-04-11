@@ -1,41 +1,33 @@
 # The-Minimal-64-Home-Computer
 
-NEW: Java/Processing version of the emulator available!
-
 Here is my take on 80's home computer magic: The Minimal 64! To me, its the most computer from the least logic or the shortest way from TTL to Space Invaders. Have fun!
 
-● Simple 'Von-Neumann' architecture, 8-bit data bus, 16-bit address bus
+NEW: Open-source emulator written in Java/Processing out now!
 
-● 128 instructions including conditional branching, subroutines, stack and word operations
+● Clean 'Von-Neumann' architecture, 8-bit data bus, 16-bit address bus, 24 control signals
 
 ● 64KB RAM, 512KB FLASH SSD with file system (format, load, save, dir, delete)
 
-● VGA output 400 x 240 pixels, monochrome
+● Monochrome VGA output 400 x 240 pixels, PS/2, expansion and serial UART ports
 
-● PS/2 keyboard, expansion & serial port
+● 8MHz system clock, 6MHz CPU clock with 0.84Mips (2x Commodore 64)
 
-● 8MHz clock rate, CPU @ 6MHz with 0.84Mips
+● Only 61 TTL chips (74HCxx logic, 6C1008 SRAM, 39SF0x0 FLASH)
+
+● 128 instructions including conditional branching, subroutines, stack and word operations
 
 ● 4 data registers A, B, X, Y
 
-● ALU supporting ADD, SUBTRACT, NOT, AND, OR, XOR
+● ALU supporting ADD, SUBTRACT, NOT, AND, OR, XOR with 3 flags (negative, carry and zero)
 
-● 3 flags (negative, carry and zero)
+● Full native tool-chain: MinOS, text editor, assembler, fast Python-like interpreter 'MIN'
 
-● 24 control signals
+● Emulator, cross-assembler (Windows 10) and games (TETRIS clone, Space Invaders clone)
 
-● 61 TTL chips (only 74HCxx logic, 6C1008 SRAM, 39SF0x0 FLASH)
+Introduction (YouTube): https://www.youtube.com/watch?v=3zGTsi4AYLw
 
-● Full native tool-chain: OS, text editor, assembler, Python-like language interpreter
-
-● Games (Tetris, Invaders)
-
-● Emulator and cross-assembler (Windows 10)
-
-A brief introduction: https://www.youtube.com/watch?v=3zGTsi4AYLw
+My YouTube channel: https://www.youtube.com/channel/UCXYQcMpUBT3aaQKfmAVJNow
 
 Reference Manual: https://docs.google.com/document/d/1e4hL9Z7BLIoUlErWgJOngnSMYLXjfnsZB9BtlwhTC6U/edit?usp=sharing
 
-You like my stuff and want to give something back? https://www.paypal.me/carstenherting
-
-My YouTube channel: https://www.youtube.com/channel/UCXYQcMpUBT3aaQKfmAVJNow
+Like my stuff and want to give something back? https://www.paypal.me/carstenherting
