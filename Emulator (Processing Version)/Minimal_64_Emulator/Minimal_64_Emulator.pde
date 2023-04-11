@@ -20,6 +20,16 @@ int flashState=0; // determines the state of a write operation to FLASH (see SSF
 byte[] mFlash; byte[] mRam = new byte[0x10000]; // memory of the CPU
 int mBank=0, mA=0, mFlags=0, mPC=0; // register states of the CPU
 
+final int FLAG_Z = 1; // zero flag
+final int FLAG_C = 2; // carry flag
+final int FLAG_N = 4; // negative flag
+
+final int[] clocksPerInstruction = { // clock cycles used per instruction
+  16, 4, 4, 6, 5, 5, 4, 6, 6, 5, 5, 5, 5, 5, 6, 7, 8, 9, 10, 11, 13, 5, 6, 7, 8, 9, 10, 11, 12, 5, 5, 5,
+  5, 5, 5, 5, 5, 12, 5, 7, 7, 8, 8, 8, 8, 8, 8, 8, 15, 8, 10, 10, 11, 11, 11, 11, 11, 11, 11, 8, 9, 9, 9, 9,
+  8, 9, 8, 9, 8, 8, 8, 8, 8, 8, 9, 11, 11, 11, 12, 11, 12, 11, 12, 10, 10, 14, 12, 11, 7, 8, 15, 5, 5, 5, 5, 5,  
+  5, 5, 5, 6, 6, 7, 7, 10, 13, 7, 7, 7, 7, 7, 7, 7, 13, 7, 7, 10, 8, 11, 14, 8, 8, 8, 8, 8, 8, 8, 14, 6 };
+
 // -------------------------------------------------------------------------------------------------
 
 void settings() { size(screenWidth, screenWidth*240/400, P2D); }
@@ -199,10 +209,6 @@ void WriteMem(int b, int at) // writes a byte to memory (either FLASH or RAM), e
   }
 }
 
-final int FLAG_Z = 1; // zero flag
-final int FLAG_C = 2; // carry flag
-final int FLAG_N = 4; // negative flag
-
 void DoFlagZN(int a) // update the Z and N flag
 {
   if ((a & 0xff) == 0) mFlags |= FLAG_Z; else mFlags &= ~FLAG_Z;
@@ -214,12 +220,6 @@ int TakeAddr() { return ReadMem(mPC++) | (ReadMem(mPC++) << 8); } // consume a 1
 int GetAddr(int adr) { return ReadMem(adr++) | (ReadMem(adr++) << 8); } // get a 16-bit relative address
 
 // -------------------------------------------------------------------------------------------------
-
-final int[] clocksPerInstruction = { // clock cycles used per instruction
-  16, 4, 4, 6, 5, 5, 4, 6, 6, 5, 5, 5, 5, 5, 6, 7, 8, 9, 10, 11, 13, 5, 6, 7, 8, 9, 10, 11, 12, 5, 5, 5,
-  5, 5, 5, 5, 5, 12, 5, 7, 7, 8, 8, 8, 8, 8, 8, 8, 15, 8, 10, 10, 11, 11, 11, 11, 11, 11, 11, 8, 9, 9, 9, 9,
-  8, 9, 8, 9, 8, 8, 8, 8, 8, 8, 9, 11, 11, 11, 12, 11, 12, 11, 12, 10, 10, 14, 12, 11, 7, 8, 15, 5, 5, 5, 5, 5,  
-  5, 5, 5, 6, 6, 7, 7, 10, 13, 7, 7, 7, 7, 7, 7, 7, 13, 7, 7, 10, 8, 11, 14, 8, 8, 8, 8, 8, 8, 8, 14, 6 };
 
 int DoInstruction() // handle all instructions
 {
