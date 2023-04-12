@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------------------------------
-// 'MINIMAL 64 Home Computer' emulator written by Carsten Herting (slu4) 2023, last update Apr 11th 2023
+// 'MINIMAL 64 Home Computer' emulator written by Carsten Herting (slu4) 2023, last update Apr 12th 2023
 // -----------------------------------------------------------------------------------------------------
 
 final int screenWidth = 1024;          // set the screen width (original size is 400 x 240 pixels)
@@ -36,6 +36,7 @@ void settings() { size(screenWidth, screenWidth*240/400, P2D); }
 
 void setup()
 {
+  for(int i=0; i<mRam.length; i++) mRam[i] = (byte)random(256); // randomize RAM content after power-up
   if ((mFlash = loadBytes("flash.bin")) == null || mFlash.length != 0x80000) exit(); // load the flash.bin image into FLASH
   surface.setTitle("Minimal 64 Emulator - F12: QUIT, F11: RESET, F10: PASTE clipboard data as serial input.");
 
@@ -214,9 +215,13 @@ void DoFlagZN(int a) // update the Z and N flag
   if ((a & 0xff) == 0) mFlags |= FLAG_Z; else mFlags &= ~FLAG_Z;
   if ((a & 0x80) != 0) mFlags |= FLAG_N; else mFlags &= ~FLAG_N;
 }
+
 void DoFlagC(int a, boolean isAdd) { mFlags = (((a & 0xffffff00) != 0) ^ isAdd) ? (mFlags & ~FLAG_C) : (mFlags | FLAG_C) ; }
+
 void DoFlagCLikeZ() { int c = (mFlags & FLAG_Z)<<1; mFlags = (mFlags & 5) | c; } // make C=Z
+
 int TakeAddr() { return ReadMem(mPC++) | (ReadMem(mPC++) << 8); } // consume a 16-bit absolute address from program counter (mPC)
+
 int GetAddr(int adr) { return ReadMem(adr++) | (ReadMem(adr++) << 8); } // get a 16-bit relative address
 
 // -------------------------------------------------------------------------------------------------
