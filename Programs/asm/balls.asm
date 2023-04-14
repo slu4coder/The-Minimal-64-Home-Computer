@@ -69,8 +69,8 @@ moveloop:       LDR vxptr CPI 0 BMI vxneg
                   ADR xpos0ptr STR xpos0ptr
                   LDI 0 ACR xposlptr STR xposlptr
                   LDI 0 ACR xposmptr STR xposmptr BEQ movey
-                    LDR xposlptr CPI 144 BCC movey
-                      LDI 143 STR xposlptr
+                    LDR xposlptr CPI 128 BCC movey
+                      LDI 127 STR xposlptr
                       LDR vxptr NEG STR vxptr JPA movey
     vxneg:      ADR xpos0ptr STR xpos0ptr 
                 LDR xposlptr SCI 0 STR xposlptr

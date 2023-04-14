@@ -1,7 +1,7 @@
 ; ------------------------------------------------------
 ;
 ; Minimal Text Editor for the 'Minimal 64 Home Computer'
-;  written by Carsten Herting - last update 22.9.2022
+;  written by Carsten Herting  - last update 14.4.2023
 ;
 ; ------------------------------------------------------
 
@@ -146,7 +146,7 @@ StateChar:  JPS Update                             ; check if redraw is needed b
             JPS _WaitInput                         ; get char
             CPI 8 BEQ pc_BackSp                    ; BACKSPACE
             CPI 9 BEQ pc_Tab                       ; convert TABULATOR to SPACE
-            CPI 27 BEQ mainloop                    ; discard ESC
+            CPI 27 BEQ pc_CtrlQ                    ; ESC = CTRL+Q
             CPI 13 BEQ mainloop                    ; discard CR
             CPI 0xe0 BCC pc_default                ; 0xe0 - 0xfe are custom function keys (see PS2 table)
               SBI 0xe0 LSL                         ; calculate table index (x2 due to words)
@@ -352,7 +352,7 @@ StateChar:  JPS Update                             ; check if redraw is needed b
 
 ; ------------------------------------------------------------
 
-  pc_Tab:     LDI 32                                  ; then goto default
+  pc_Tab:     LDI 32                                  ; TAB = SPACE, then goto default
 
 ; ------------------------------------------------------------
 
@@ -832,7 +832,7 @@ strcpy:          LDA
 newstr:         'NEW (y/n)?', 0
 loadstr:        'LOAD ', 0
 savestr:        'SAVE ', 0
-receivestr:     'RECEIVING (ESC)...', 0
+receivestr:     'RECEIVING... (ESC to stop)', 0
 
 iscoldstart:    1             ; indicating first (cold) start of this editor
 

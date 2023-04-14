@@ -2,7 +2,7 @@
 ; *****                                                        *****
 ; *****       MinOS 2.0 for the MINIMAL 64 Home Computer       *****
 ; *****                                                        *****
-; ***** written by Carsten Herting - last update Feb 24th 2023 *****
+; ***** written by Carsten Herting - last update Apr 14th 2023 *****
 ; *****                                                        *****
 ; ******************************************************************
 
@@ -18,17 +18,17 @@
 ; HOW TO USE THIS CODE
 ; This file represents the sourcecode of the operating system 'MinOS 2' of the 'MINIMAL 64'.
 ; A HEX file of the OS code can be produced by typing 'asm os.asm'. This HEX file can be burned
-; into the first 3 banks of the FLASH ROM of the MINIMAL.
-; Alternatively, assuming a prior version of MinOS is already installed in your hardware, this
-; HEX file can also be uploaded into RAM 0x0000-0x2fff by typing 'receive ENTER' and pasting the
+; into the first 3 banks of the 512KB FLASH SSD ROM of the MINIMAL and will allow it to boot.
+; In case a prior version of MinOS is already installed in your hardware, the OS can be updated
+; 'in situ': Upload the HEX file into RAM 0x0000-0x2fff by typing 'receive ENTER' and pasting the
 ; HEX file into a terminal to the MINIMAL 64 via the UART interface. When the upload into RAM has
-; completed, type 'flash ENTER' to copy the OS into FLASH banks 0-2. Upon pressing RESET, the operating
-; system will start. Since only banks 0-2 are updated, all user files will remain on the SSD.
-
-; _<label> are API labels providing access to kernel functions & data via a jump table. They will not change.
+; completed, type 'flash ENTER' to copy the OS from RAM into FLASH banks 0-2. Upon pressing RESET,
+; the new OS will start. Since only banks 0-2 are updated, user files will remain on the SSD.
 
 ; By default FLASH is deaktivated by the OS (BANK = 0xff) yielding contiguous RAM 0x0000-0xffff.
 ; Only during file access FLASH is activ.
+
+; _<label> are API labels providing access to kernel functions & data via a jump table. They will not change.
 
 ; **********************************************************************************************************
 
@@ -168,21 +168,27 @@ OS_ReadLine:  LDA _ReadPtr+0 PHS LDA _ReadPtr+1 PHS       ; save desired start o
   waitchar:   LDI 160 PHS JPS OS_Char PLS                 ; put the cursor
               JPS OS_WaitInput                            ; wait on any input
               CPI 0x80 BCS waitchar                       ; ignore unprintable chars (UP, DN, PgUp, etc.)
-              CPI 27 BEQ waitchar                         ; to ESC
               CPI 9 BEQ waitchar                          ; no TAB
-              CPI 8 BNE havenoback                        ; check for BACKSPACE
+              CPI 27 BNE checkback                        ; ESC invalidates input data
+                JPS clrcursor
+                PLS STA _ReadPtr+1 PLS STA _ReadPtr+0     ; move to start of input and put ENTER
+                LDI 10 STR _ReadPtr
+                PHS JPS OS_PrintChar PLS                  ; perform 'ENTER'
+                RTS
+  checkback:  CPI 8 BNE havenoback                        ; check for BACKSPACE
                 LDA _XPos CPI 0 BEQ waitchar              ; check for BACKSPACE at linestart
-                  LDI ' ' PHS JPS OS_Char PLS             ; delete the cursor
+                  JPS clrcursor
                   DEB _XPos DEB _ReadPtr+0 JPA waitchar
   havenoback: STR _ReadPtr CPI 10 BEQ haveenter           ; check for ENTER
                 LDA _ReadPtr+0 CPI <ReadLast BEQ waitchar ; end of line reached?
                   LDR _ReadPtr PHS JPS OS_Char PLS
                    INB _XPos INB _ReadPtr+0
                    JPA waitchar
-  haveenter:  LDI ' ' PHS JPS OS_Char PLS                 ; delete the cursor
+  haveenter:  JPS clrcursor
               PLS STA _ReadPtr+1 PLS STA _ReadPtr+0       ; move to start of input
               LDI 10 PHS JPS OS_PrintChar PLS             ; perform 'ENTER'
               RTS
+  clrcursor:  LDI ' ' PHS JPS OS_Char PLS RTS
 
   ; modifies: _ReadPtr
   OS_ReadSpace: LDR _ReadPtr CPI 32 BCC ps_useit
@@ -1120,7 +1126,9 @@ Mnemonics:      'NOP', 'BNK', 'BFF', 'WIN', 'INP', 'INK', 'OUT',
                     LDI 24 SBW PtrC LDI 0 SCB PtrC+2                   ; subtract headersize from PtrC
 
                     CLB _XPos
-                    JPS _ReadInput CPI 0x0a BEQ _Prompt                ; ENTER = user break
+                    JPS _ReadInput
+                    CPI 0x0a BEQ _Prompt                               ; ENTER = user break
+                    CPI 27 BEQ _Prompt                                 ; ESC = user break
 
                     LDA _ReadNum+2 BNK LDR _ReadNum CPI 0 BEQ dc_lookfiles  ; check once if info should be printed
   dc_nextchar:        PHS JPS _PrintChar PLS                           ; print filename
@@ -1143,7 +1151,7 @@ Mnemonics:      'NOP', 'BNK', 'BFF', 'WIN', 'INP', 'INK', 'OUT',
                   LDI 20 STA _XPos LDI <freetext PHS LDI >freetext PHS JPS _Print
                   JPA _Prompt
 
-  dirtext:      10, 'FILENAME........... DEST ..SIZE', 10, 0
+  dirtext:      10, 'FILENAME........... DEST ..SIZE (ESC to stop)', 10, 0
   freetext:     'FREE ', 10, 0
 
   ; Produces a FLASH/BANK address in the correct form: PtrA+2: bank, PtrA0..1: 12bit section address
@@ -1496,7 +1504,7 @@ Mnemonics:      'NOP', 'BNK', 'BFF', 'WIN', 'INP', 'INK', 'OUT',
                 RTS
 
   mode:         0xff
-  montxt:       'MON :write .to, #bank LF', 10, 0
+  montxt:       10, 'MONITOR (: write | . to | # bank | ESC to stop)', 10, 0
   banktxt:      'BANK ', 0
 
   MonEnd:
@@ -1732,7 +1740,7 @@ Mnemonics:      'NOP', 'BNK', 'BFF', 'WIN', 'INP', 'INK', 'OUT',
                     LDA hl_hexresult                             ; return full byte value in A
                     RTS
 
-  hl_starttext:     'Waiting for HEX file...', 10, 0
+  hl_starttext:     'Waiting for HEX file... (ESC to stop)', 10, 0
   hl_errortext:     '?CHECKSUM ERRORS: ', 0
   hl_ramarea:       'Data written to ', 0
 
