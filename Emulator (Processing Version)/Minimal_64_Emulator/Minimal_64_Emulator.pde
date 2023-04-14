@@ -30,6 +30,21 @@ final int[] clocksPerInstruction = { // clock cycles used per instruction
   8, 9, 8, 9, 8, 8, 8, 8, 8, 8, 9, 11, 11, 11, 12, 11, 12, 11, 12, 10, 10, 14, 12, 11, 7, 8, 15, 5, 5, 5, 5, 5,  
   5, 5, 5, 6, 6, 7, 7, 10, 13, 7, 7, 7, 7, 7, 7, 7, 13, 7, 7, 10, 8, 11, 14, 8, 8, 8, 8, 8, 8, 8, 14, 6 };
 
+final int[][] keyValuePairs = { // GERMAN KEYBOARD LAYOUT
+    {(int)'A', 0x1C},      {(int)'B', 0x32},      {(int)'C', 0x21},        {(int)'D', 0x23},      {(int)'E', 0x24},
+    {(int)'F', 0x2B},      {(int)'G', 0x34},      {(int)'H', 0x33},        {(int)'I', 0x43},      {(int)'J', 0x3B},
+    {(int)'K', 0x42},      {(int)'L', 0x4B},      {(int)'M', 0x3A},        {(int)'N', 0x31},      {(int)'O', 0x44},
+    {(int)'P', 0x4D},      {(int)'Q', 0x15},      {(int)'R', 0x2D},        {(int)'S', 0x1B},      {(int)'T', 0x2C},
+    {(int)'U', 0x3C},      {(int)'V', 0x2A},      {(int)'W', 0x1D},        {(int)'X', 0x22},      {(int)'Y', 0x35},
+    {(int)'Z', 0x1A},      {(int)'0', 0x45},      {(int)'1', 0x16},        {(int)'2', 0x1E},      {(int)'3', 0x26},
+    {(int)'4', 0x25},      {(int)'5', 0x2E},      {(int)'6', 0x36},        {(int)'7', 0x3D},      {(int)'8', 0x3E},
+    {(int)'9', 0x46},      {(int)' ', 0x29},      {(int)',', 0x41},        {(int)'.', 0x49},      {(int)ENTER, 0x5A},
+    {(int)ESC, 0x76},      {(int)TAB, 0x0D},      {(int)BACKSPACE, 0x66},  {(int)DELETE, 0x71},   {0x80|UP, 0x75},
+    {0x80|DOWN, 0x72},     {0x80|LEFT, 0x6B},     {0x80|RIGHT, 0x74},      {0x80|SHIFT, 0x12},    {0x80|CONTROL, 0x14},
+    {0x80|ALT, 0x11},      {19, 0x11}, /*ALTGR*/  {2, 0x6C}, /*HOME*/      {3, 0x69}, /*END*/     {16, 0x7D}, /*PG_UP*/
+    {11, 0x7A}, /*PG_DN*/  {47, 0x4A}, /*MINUS*/  {92, 0x5D}, /*HASH*/     {93, 0x5B}, /*PLUS*/   {0, 0x61}, /*LESS*/
+    {45, 0x4E}, /*BSLASH*/ {96, 0x0E}, /*POWER*/  }; // PS2 scan codes, 0xE0 are omitted since MinOS ignores them anyway
+
 // -------------------------------------------------------------------------------------------------
 
 void settings() { size(screenWidth, screenWidth*240/400, P2D); }
@@ -37,71 +52,9 @@ void settings() { size(screenWidth, screenWidth*240/400, P2D); }
 void setup()
 {
   for(int i=0; i<mRam.length; i++) mRam[i] = (byte)random(256); // randomize RAM content after power-up
+  for (int[] p : keyValuePairs) ps2ScanCodes.put(p[0], (byte)p[1]); // initialize PS2 scan codes
   if ((mFlash = loadBytes("flash.bin")) == null || mFlash.length != 0x80000) exit(); // load the flash.bin image into FLASH
-  surface.setTitle("Minimal 64 Emulator - F12: QUIT, F11: RESET, F10: PASTE clipboard data as serial input.");
-
-  ps2ScanCodes.put((int)'A', (byte)0x1C); // init PS2 scan codes to be emitted (german keyboard layout)
-  ps2ScanCodes.put((int)'B', (byte)0x32); // all preceeding 0xE0 codes are omitted since MinOS ignores them anyway
-  ps2ScanCodes.put((int)'C', (byte)0x21);
-  ps2ScanCodes.put((int)'D', (byte)0x23);
-  ps2ScanCodes.put((int)'E', (byte)0x24);
-  ps2ScanCodes.put((int)'F', (byte)0x2B);
-  ps2ScanCodes.put((int)'G', (byte)0x34);
-  ps2ScanCodes.put((int)'H', (byte)0x33);
-  ps2ScanCodes.put((int)'I', (byte)0x43);
-  ps2ScanCodes.put((int)'J', (byte)0x3B);
-  ps2ScanCodes.put((int)'K', (byte)0x42);
-  ps2ScanCodes.put((int)'L', (byte)0x4B);
-  ps2ScanCodes.put((int)'M', (byte)0x3A);
-  ps2ScanCodes.put((int)'N', (byte)0x31);
-  ps2ScanCodes.put((int)'O', (byte)0x44);
-  ps2ScanCodes.put((int)'P', (byte)0x4D);
-  ps2ScanCodes.put((int)'Q', (byte)0x15);
-  ps2ScanCodes.put((int)'R', (byte)0x2D);
-  ps2ScanCodes.put((int)'S', (byte)0x1B);
-  ps2ScanCodes.put((int)'T', (byte)0x2C);
-  ps2ScanCodes.put((int)'U', (byte)0x3C);
-  ps2ScanCodes.put((int)'V', (byte)0x2A);
-  ps2ScanCodes.put((int)'W', (byte)0x1D);
-  ps2ScanCodes.put((int)'X', (byte)0x22);
-  ps2ScanCodes.put((int)'Y', (byte)0x35);
-  ps2ScanCodes.put((int)'Z', (byte)0x1A);
-  ps2ScanCodes.put((int)'0', (byte)0x45);
-  ps2ScanCodes.put((int)'1', (byte)0x16);
-  ps2ScanCodes.put((int)'2', (byte)0x1E);
-  ps2ScanCodes.put((int)'3', (byte)0x26);
-  ps2ScanCodes.put((int)'4', (byte)0x25);
-  ps2ScanCodes.put((int)'5', (byte)0x2E);
-  ps2ScanCodes.put((int)'6', (byte)0x36);
-  ps2ScanCodes.put((int)'7', (byte)0x3D);
-  ps2ScanCodes.put((int)'8', (byte)0x3E);
-  ps2ScanCodes.put((int)'9', (byte)0x46);  
-  ps2ScanCodes.put((int)' ', (byte)0x29);
-  ps2ScanCodes.put((int)',', (byte)0x41);
-  ps2ScanCodes.put((int)'.', (byte)0x49);
-  ps2ScanCodes.put((int)ENTER, (byte)0x5A);
-  ps2ScanCodes.put((int)ESC, (byte)0x76);
-  ps2ScanCodes.put((int)TAB, (byte)0x0D);
-  ps2ScanCodes.put((int)BACKSPACE, (byte)0x66);
-  ps2ScanCodes.put((int)DELETE, (byte)0x71);
-  ps2ScanCodes.put(0x80 | UP, (byte)0x75); // 0x80 marks CODED keys
-  ps2ScanCodes.put(0x80 | DOWN, (byte)0x72);
-  ps2ScanCodes.put(0x80 | LEFT, (byte)0x6B);
-  ps2ScanCodes.put(0x80 | RIGHT, (byte)0x74);
-  ps2ScanCodes.put(0x80 | SHIFT, (byte)0x12);
-  ps2ScanCodes.put(0x80 | CONTROL, (byte)0x14);
-  ps2ScanCodes.put(0x80 | ALT, (byte)0x11);
-  ps2ScanCodes.put(19, (byte)0x11); // ALTGR
-  ps2ScanCodes.put(2, (byte)0x6C); // HOME/POS1
-  ps2ScanCodes.put(3, (byte)0x69); // END
-  ps2ScanCodes.put(16, (byte)0x7D); // PAGE_UP
-  ps2ScanCodes.put(11, (byte)0x7A); // PAGE_DOWN
-  ps2ScanCodes.put(47, (byte)0x4A); // MINUS
-  ps2ScanCodes.put(92, (byte)0x5D); // HASH
-  ps2ScanCodes.put(93, (byte)0x5B); // PLUS
-  ps2ScanCodes.put(0, (byte)0x61); // LESS/GREATER/PIPE
-  ps2ScanCodes.put(45, (byte)0x4E); // BACKSLASH  
-  ps2ScanCodes.put(96, (byte)0x0E); // POWER 
+  surface.setTitle("Minimal 64 Emulator - F12: QUIT, F11: RESET, F10: PASTE clipboard data as serial input.");  
 }
 
 void draw()
