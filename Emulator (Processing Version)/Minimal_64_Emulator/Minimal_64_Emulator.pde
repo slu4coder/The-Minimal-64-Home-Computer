@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------------------------------
-// 'MINIMAL 64 Home Computer' emulator written by Carsten Herting (slu4) 2023, last update Apr 12th 2023
+// 'MINIMAL 64 Home Computer' emulator written by Carsten Herting (slu4) 2023, last update Apr 15th 2023
 // -----------------------------------------------------------------------------------------------------
 
 final int screenWidth = 1024;          // set the screen width (original size is 400 x 240 pixels)
@@ -54,7 +54,7 @@ void setup()
   for(int i=0; i<mRam.length; i++) mRam[i] = (byte)random(256); // randomize RAM content after power-up
   for (int[] p : keyScancodePairs) ps2ScanCodes.put(p[0], (byte)p[1]); // initialize PS2 scan codes
   if ((mFlash = loadBytes("flash.bin")) == null || mFlash.length != 0x80000) exit(); // load the flash.bin image into FLASH
-  surface.setTitle("Minimal 64 Emulator - F12: QUIT, F11: RESET, F10: PASTE clipboard data as serial input.");  
+  surface.setTitle("Minimal 64 Emulator - F10: PASTE clipboard data, F11: RESET, F12: QUIT");  
 }
 
 void draw()
@@ -68,7 +68,7 @@ void draw()
   for(int i=0; i<512*252; i+=8) // 64 bytes per row, 252 rows
   {
     byte b = mRam[videoAddress++]; // fetch next byte of VRAM    
-    for(int j=0; j<8; j++) { videoRam.pixels[i+j] = (b & 1) == 1 ? 0xffb0ffb0 : 0xff282828; b>>=1; }
+    for(int j=0; j<8; j++) { videoRam.pixels[i+j] = (b & 1) == 1 ? 0xffb0ffd0 : 0xff20282f; b>>=1; }
   }
   videoRam.updatePixels();
   
