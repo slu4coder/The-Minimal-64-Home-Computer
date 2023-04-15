@@ -30,7 +30,7 @@ final int[] clocksPerInstruction = { // clock cycles used per instruction
   8, 9, 8, 9, 8, 8, 8, 8, 8, 8, 9, 11, 11, 11, 12, 11, 12, 11, 12, 10, 10, 14, 12, 11, 7, 8, 15, 5, 5, 5, 5, 5,  
   5, 5, 5, 6, 6, 7, 7, 10, 13, 7, 7, 7, 7, 7, 7, 7, 13, 7, 7, 10, 8, 11, 14, 8, 8, 8, 8, 8, 8, 8, 14, 6 };
 
-final int[][] keyValuePairs = { // GERMAN KEYBOARD LAYOUT
+final int[][] keyScancodePairs = { // GERMAN KEYBOARD LAYOUT
     {(int)'A', 0x1C},      {(int)'B', 0x32},      {(int)'C', 0x21},        {(int)'D', 0x23},      {(int)'E', 0x24},
     {(int)'F', 0x2B},      {(int)'G', 0x34},      {(int)'H', 0x33},        {(int)'I', 0x43},      {(int)'J', 0x3B},
     {(int)'K', 0x42},      {(int)'L', 0x4B},      {(int)'M', 0x3A},        {(int)'N', 0x31},      {(int)'O', 0x44},
@@ -52,7 +52,7 @@ void settings() { size(screenWidth, screenWidth*240/400, P2D); }
 void setup()
 {
   for(int i=0; i<mRam.length; i++) mRam[i] = (byte)random(256); // randomize RAM content after power-up
-  for (int[] p : keyValuePairs) ps2ScanCodes.put(p[0], (byte)p[1]); // initialize PS2 scan codes
+  for (int[] p : keyScancodePairs) ps2ScanCodes.put(p[0], (byte)p[1]); // initialize PS2 scan codes
   if ((mFlash = loadBytes("flash.bin")) == null || mFlash.length != 0x80000) exit(); // load the flash.bin image into FLASH
   surface.setTitle("Minimal 64 Emulator - F12: QUIT, F11: RESET, F10: PASTE clipboard data as serial input.");  
 }
