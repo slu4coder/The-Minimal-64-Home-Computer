@@ -573,7 +573,7 @@ StateReceive:   JPS _WaitInput
                   LDI ' ' STR copyptr DEW copyptr ; convert TAB to double SPACE
                   LDI ' '
   rec_normal:     STR copyptr DEW copyptr
-  rec_indicator:  INW 0xc45e INW 0xc49e           ; show receive indicator after "..."
+  rec_indicator:  INW 0xc466 INW 0xc4a6           ; show receive indicator
                   JPA StateReceive
   rec_end:      LDI 10 OUT
                 CLB state

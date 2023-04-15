@@ -46,7 +46,7 @@ OS_Bootloader:  LDI <OS_Image_Start STA 0xfffc                 ; prepare OS imag
 
 ; **********************************************************************************************************
 
-OS_Image_Start:                                                ; OS image starts HERE
+OS_Image_Start:                                                ; OS image starts HERE on bank 0
 
   #mute                                                        ; do not emit origin address...
   #org 0xb000                                                  ; ... but assemble for this destination
@@ -907,7 +907,8 @@ OS_Image_End:                                                  ; address of firs
 
 ; **********************************************************************************************************
 
-#org 0x1000
+#org 0x1000                                  ; store tables in bank 1
+
   #mute
   #org 0x0000   ; BANK 1: Charset & Table Data
   #emit
@@ -1062,7 +1063,7 @@ Mnemonics:      'NOP', 'BNK', 'BFF', 'WIN', 'INP', 'INK', 'OUT',
 
 ; **********************************************************************************************************
 
-#org 0x2000
+#org 0x2000                                                     ; store MinOS commands as files in bank 2
 
 'save', 0, '              ', 0, SaveStart, SaveEnd-SaveStart    ; file header
 
@@ -1504,7 +1505,7 @@ Mnemonics:      'NOP', 'BNK', 'BFF', 'WIN', 'INP', 'INK', 'OUT',
                 RTS
 
   mode:         0xff
-  montxt:       10, 'MONITOR (: write | . to | # bank | ESC to stop)', 10, 0
+  montxt:       10, 'MONITOR (',39,':',39,' write, ',39,'.',39,' to, ',39,'#',39,' bank, ESC to stop)', 0
   banktxt:      'BANK ', 0
 
   MonEnd:
@@ -1756,5 +1757,3 @@ Mnemonics:      'NOP', 'BNK', 'BFF', 'WIN', 'INP', 'INK', 'OUT',
 ; **********************************************************************************************************
 
 0, '                  ', 0, 0x0000, 0x3000-*-2                   ; dummy file filling up rest of bank 0x02
-
-#org 0x0000
