@@ -29,7 +29,7 @@ comes with the following built-in commands
 %1. OS COMMANDS (2/2)
 
 'mon [<x>]'  starts a memory monitor [at <x>].
-  ENTER      exits the monitor to the OS prompt.
+  ESC        exits the monitor to the OS prompt.
   <x>        changes the monitor address to <x>.
   [<x>].<y>  displays an address range.
   :<d>[ <d>] deposits <d> at current address++.
@@ -45,16 +45,16 @@ comes with the following built-in commands
 'save <x> <y> <name>' saves memory area <x>..<y>
   under the filename <name> onto the SSD.
 
-'flash' updates the OS 'in-situ' by writing the
-  RAM area 0x0000..0x2fff to FLASH banks 0..2.
-  The user's SSD area remains unchanged.
+'flash' updates the OS 'in-situ'. The user's SSD
+  area remains unchanged. Full update procedure:
 
   o Assemble the OS with 'asm os.asm' on your PC.
     This will output a 'HEX file' to the console.
-  o On the Minimal, type 'receive ENTER'.
-  o Paste the HEX file into a terminal window on
-    your PC connected to the Minimal via UART.
-  o On the Minimal, type ESC and 'flash ENTER'.
+  o On the Minimal, type 'memset 0 2fff ff ENTER'
+    to clear the RAM.
+  o Type 'receive ENTER' and paste the HEX file
+    image to the Minimal's RAM as serial input.
+  o On the Minimal, type 'flash ENTER' and reset.
 %2. MEMORY MAP
 
 0x0000..0x0fff 4KB of selected FLASH bank or RAM:
@@ -129,7 +129,7 @@ o 'call(..)' for assembly/API routine integration
 o full expression handling including '+=', '-='
 o bitwise/logical operators 'and/or/xor/not'
 o [..|..] element access and '_' concatenation
-o decimal and HEX '0xffff' numbers, "..." strings
+o decimal and HEX '0xffff' numbers, ".." strings
 o print(..) for text and decimal number output
 o 'use "<library>"' for recursive file import
 o 'std.min' library implements: pos, rnd, clear,
