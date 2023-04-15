@@ -1,6 +1,6 @@
-// -----------------------------------------------------------------------------------------------------
-// 'MINIMAL 64 Home Computer' emulator written by Carsten Herting (slu4) 2023, last update Apr 15th 2023
-// -----------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+// 'MINIMAL 64 Home Computer' emulator written by Carsten Herting (slu4) for Processing 3.5.4, last update Apr 15th 2023
+// ---------------------------------------------------------------------------------------------------------------------
 
 final int screenWidth = 1024;          // set the screen width (original size is 400 x 240 pixels)
 
@@ -92,16 +92,11 @@ void handleKeyRepeat()
   }
 }
 
-void keyReleased() // handle key release event
-{
-  keyCode = (key == CODED ? 0x80 : 0x00) | keyCode & 0xff; // mark keyCodes as 'CODED'
-  keyPressedStates[keyCode] = false;
-  if (ps2ScanCodes.get(keyCode) != null) { ps2Input.add((byte)0xf0); ps2Input.add(ps2ScanCodes.get(keyCode)); } // emit 'release' scancode
-}
-
 void keyPressed() // handle keypress event
 {
-  keyCode = (key == CODED ? 0x80 : 0x00) | keyCode & 0xff; // mark keyCodes as 'CODED'
+  //println(key, key == CODED, keyCode);
+  
+  keyCode = (key == CODED ? 0x80 : 0x00) | keyCode & 0xff; // mark CODED key's keyCodes with 0x80
   switch(keyCode)
   {
     case 108: saveBytes("flash.bin", mFlash); exit(); // F12: EXIT
@@ -128,6 +123,13 @@ void keyPressed() // handle keypress event
       if (key == 27) key = 0; // disable Processing's ESC function
       break;
   }
+}
+
+void keyReleased() // handle key release event
+{
+  keyCode = (key == CODED ? 0x80 : 0x00) | keyCode & 0xff; // mark keyCodes as 'CODED'
+  keyPressedStates[keyCode] = false;
+  if (ps2ScanCodes.get(keyCode) != null) { ps2Input.add((byte)0xf0); ps2Input.add(ps2ScanCodes.get(keyCode)); } // emit 'release' scancode
 }
 
 // -------------------------------------------------------------------------------------------------
