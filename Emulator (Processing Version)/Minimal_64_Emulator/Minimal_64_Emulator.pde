@@ -1,6 +1,6 @@
-// ------------------------------------------------------------------------------------------------------------------
-// 'MINIMAL 64 Home Computer' emulator for Processing 4, written by Carsten Herting (slu4), last update Apr 16th 2023
-// ------------------------------------------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------------------------------------------
+// 'MINIMAL 64 Home Computer' emulator for Processing - written by Carsten Herting (slu4), last update Jun 21st 2023
+// -----------------------------------------------------------------------------------------------------------------
 
 final int screenWidth = 1024; // set the screen width (original size is 400 x 240 pixels)
 
@@ -16,10 +16,10 @@ final int[][] keyScancodePairs = // PS2 scan codes (German keyboard layout) (0xE
   {(int)'U', 0x3C},      {(int)'V', 0x2A},      {(int)'W', 0x1D},        {(int)'X', 0x22},      {(int)'Y', 0x35},
   {(int)'Z', 0x1A},      {(int)'0', 0x45},      {(int)'1', 0x16},        {(int)'2', 0x1E},      {(int)'3', 0x26},
   {(int)'4', 0x25},      {(int)'5', 0x2E},      {(int)'6', 0x36},        {(int)'7', 0x3D},      {(int)'8', 0x3E},
-  {(int)'9', 0x46},      {(int)' ', 0x29},      {(int)',', 0x41},        {(int)'.', 0x49},      {(int)ENTER, 0x5A},
-  {(int)ESC, 0x76},      {(int)TAB, 0x0D},      {(int)BACKSPACE, 0x66},  {(int)DELETE, 0x71},   {UP, 0x75},
-  {DOWN, 0x72},          {LEFT, 0x6B},          {RIGHT, 0x74},           {SHIFT, 0x12},         {CONTROL, 0x14},
-  {ALT, 0x11},           {19, 0x11}, /*ALTGR*/  {2, 0x6C}, /*HOME*/      {3, 0x69}, /*END*/     {148, 0x7D}, /*PG_UP*/
+  {(int)'9', 0x46},      {(int)' ', 0x29},      {(int)',', 0x41},        {(int)'.', 0x49},      {13, 0x5A}, /*ENTER*/
+  {27, 0x76}, /*ESC*/    {9, 0x0D}, /*TAB*/     {8, 0x66}, /*BACK*/      {147, 0x71}, /*DEL*/   {150, 0x75}, /*UP*/
+  {152, 0x72}, /*DOWN*/  {149, 0x6B}, /*LEFT*/  {151, 0x74}, /*RIGHT*/   {15, 0x12}, /*SHIFT*/  {17, 0x14}, /*CTRL*/
+  {18, 0x11}, /*ALT*/    {19, 0x11}, /*ALTGR*/  {2, 0x6C}, /*HOME*/      {3, 0x69}, /*END*/     {16, 0x7D}, /*PG_UP*/
   {11, 0x7A}, /*PG_DN*/  {47, 0x4A}, /*MINUS*/  {92, 0x5D}, /*HASH*/     {93, 0x5B}, /*PLUS*/   {0, 0x61}, /*LESS*/
   {45, 0x4E}, /*BSLASH*/ {96, 0x0E}, /*POWER*/
 };
@@ -95,11 +95,14 @@ void handleKeyRepeat()
   }
 }
 
-void keyPressed() // handle keypress event
+void keyPressed(KeyEvent e) // handle keypress event
 {
-  //println(keyCode); // outputs Processing 4's keyCodes to the console
+  com.jogamp.newt.event.KeyEvent nativeEvent = (com.jogamp.newt.event.KeyEvent)e.getNative(); // use with P2D/P3D renderer
+  int keyCodeNative = nativeEvent.getKeyCode();
+
+  //println(keyCodeNative); // outputs Processing 4's native keyCodes to the console
   
-  switch(keyCode)
+  switch(keyCodeNative)
   {
     case 108: saveBytes("flash.bin", mFlash); exit(); // F12: EXIT
     case 107: mPC = 0; mBank = 0; break;              // F11: RESET
@@ -113,27 +116,30 @@ void keyPressed() // handle keypress event
           String str = (String) clipboard.getData(DataFlavor.stringFlavor); // Get the text data from the clipboard
           for(byte b : str.getBytes()) serialInput.add(b);
         } 
-        catch (UnsupportedFlavorException e) {} 
-        catch (IOException e) {}
+        catch (UnsupportedFlavorException x) {} 
+        catch (IOException x) {}
       }
       break;
     }
     default: // convert keypresses to PS2 input
-      keyPressedStates[keyCode] = true; // note the changed state of the key
-      keyPressedTimestamps[keyCode] = millis(); // note the timestamp the key was pressed
-      if (ps2ScanCodes.get(keyCode) != null) ps2Input.add(ps2ScanCodes.get(keyCode));
+      keyPressedStates[keyCodeNative] = true; // note the changed state of the key
+      keyPressedTimestamps[keyCodeNative] = millis(); // note the timestamp the key was pressed
+      if (ps2ScanCodes.get(keyCodeNative) != null) ps2Input.add(ps2ScanCodes.get(keyCodeNative));
       if (key == 27) key = 0; // disable Processing's ESC function
       break;
   }
 }
 
-void keyReleased() // handle key release event
+void keyReleased(KeyEvent e) // handle key release event
 {
-  keyPressedStates[keyCode] = false; // note the changed state of the key
-  if (ps2ScanCodes.get(keyCode) != null)
+  com.jogamp.newt.event.KeyEvent nativeEvent = (com.jogamp.newt.event.KeyEvent)e.getNative(); // use with P2D/P3D renderer
+  int keyCodeNative = nativeEvent.getKeyCode();
+  
+  keyPressedStates[keyCodeNative] = false; // note the changed state of the key
+  if (ps2ScanCodes.get(keyCodeNative) != null)
   {
     ps2Input.add((byte)0xf0); // emit 'release' scancode first
-    ps2Input.add(ps2ScanCodes.get(keyCode));
+    ps2Input.add(ps2ScanCodes.get(keyCodeNative));
   } 
 }
 
