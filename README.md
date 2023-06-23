@@ -4,6 +4,8 @@ Here is my take on 80's home computer magic: The most computer from the least lo
 
 You like this project and want to give something back? https://www.paypal.me/carstenherting Thank you so much for your kind support!
 
+NEW: Open-source emulators written in JAVA/PROCESSING and JAVASCRIPT/p5.js https://editor.p5js.org/slu4coder/full/aOUivViNt available now!
+
 ● Clean 'Von-Neumann' architecture, 8-bit data bus, 16-bit address bus, 24 control signals
 
 ● 64KB RAM, 512KB FLASH SSD with file system (format, load, save, dir, delete)
@@ -24,8 +26,6 @@ You like this project and want to give something back? https://www.paypal.me/car
 
 ● Emulator, cross-assembler (for Windows only) and classic games (TETRIS clone, Space Invaders clone)
   
-● Open-source emulators written in JAVA/PROCESSING and JAVASCRIPT/p5.js https://editor.p5js.org/slu4coder/full/aOUivViNt available now!
-
 Introduction (YouTube): https://www.youtube.com/watch?v=3zGTsi4AYLw
 
 My YouTube channel: https://www.youtube.com/channel/UCXYQcMpUBT3aaQKfmAVJNow
