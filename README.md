@@ -1,8 +1,10 @@
 # The-Minimal-64-Home-Computer
 
-Here is my take on 80's home computer magic: The Minimal 64! To me, its the most computer from the least logic or the shortest way from TTL to Space Invaders. Have fun!
+Here is my take on 80's home computer magic: The Minimal 64! To me, its the most computer from the least logic or the shortest way from TTL to Space Invaders.
 
-NEW: Open-source emulator written in JAVA/PROCESSING out now!
+You like this project and want to support it? https://www.paypal.me/carstenherting Thank you so much!
+
+NEW: Open-source emulator JAVA/PROCESSING and JAVASCRIPT/p5.js out now!
 
 ● Clean 'Von-Neumann' architecture, 8-bit data bus, 16-bit address bus, 24 control signals
 
@@ -26,8 +28,8 @@ NEW: Open-source emulator written in JAVA/PROCESSING out now!
 
 Introduction (YouTube): https://www.youtube.com/watch?v=3zGTsi4AYLw
 
-My YouTube channel: https://www.youtube.com/channel/UCXYQcMpUBT3aaQKfmAVJNow
+YouTube channel: https://www.youtube.com/channel/UCXYQcMpUBT3aaQKfmAVJNow
 
 Reference Manual: https://docs.google.com/document/d/1e4hL9Z7BLIoUlErWgJOngnSMYLXjfnsZB9BtlwhTC6U/edit?usp=sharing
 
-https://www.paypal.me/carstenherting
+Have fun!
