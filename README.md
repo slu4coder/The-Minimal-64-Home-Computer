@@ -2,6 +2,12 @@
 
 Here is my take on 80's home computer magic: The most computer from the least logic or the shortest way from TTL to Space Invaders.
 
+Reference Manual: https://docs.google.com/document/d/1e4hL9Z7BLIoUlErWgJOngnSMYLXjfnsZB9BtlwhTC6U/edit?usp=sharing
+
+Introduction video: https://www.youtube.com/watch?v=3zGTsi4AYLw
+
+YouTube channel: https://www.youtube.com/channel/UCXYQcMpUBT3aaQKfmAVJNow
+
 You like this project and want to give something back? https://www.paypal.me/carstenherting Thank you so much for your kind support!
 
 NEW: Open-source emulators written in JAVA/PROCESSING and JAVASCRIPT/p5.js https://editor.p5js.org/slu4coder/full/aOUivViNt available now!
@@ -26,10 +32,4 @@ NEW: Open-source emulators written in JAVA/PROCESSING and JAVASCRIPT/p5.js https
 
 ● Emulator, cross-assembler (for Windows only) and classic games (TETRIS clone, Space Invaders clone)
   
-Introduction (YouTube): https://www.youtube.com/watch?v=3zGTsi4AYLw
-
-My YouTube channel: https://www.youtube.com/channel/UCXYQcMpUBT3aaQKfmAVJNow
-
-Minimal 64 Reference Manual: https://docs.google.com/document/d/1e4hL9Z7BLIoUlErWgJOngnSMYLXjfnsZB9BtlwhTC6U/edit?usp=sharing
-
 Have fun!
