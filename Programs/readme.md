@@ -1,1 +1,1 @@
-# Source code of the 'Minimal 64 Home Computer' software
+# 'Minimal 64 Home Computer' software
