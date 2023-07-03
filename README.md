@@ -1,4 +1,4 @@
-# The-Minimal-64-Home-Computer
+# The 'Minimal 64 Home Computer'
 
 Here is my take on 80's home computer magic: The most computer from the least logic or the shortest way from TTL to Space Invaders.
 
