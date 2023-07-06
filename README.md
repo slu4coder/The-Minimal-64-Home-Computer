@@ -1,5 +1,7 @@
 # The 'Minimal 64 Home Computer'
 
+![IMG_1506_2](https://github.com/slu4coder/The-Minimal-64-Home-Computer/assets/52576999/b598f07d-306d-4c5c-b5dd-82162dc874fa)
+
 Here is my take on 80's home computer magic: The most computer from the least logic or the shortest way from TTL to Space Invaders.
 
 Reference Manual: https://docs.google.com/document/d/1e4hL9Z7BLIoUlErWgJOngnSMYLXjfnsZB9BtlwhTC6U/edit?usp=sharing
