@@ -4,13 +4,13 @@
 
 Here is my take on 80's home computer magic: The most computer from the least logic or the shortest way from TTL to Space Invaders.
 
+Introductory video: https://www.youtube.com/watch?v=3zGTsi4AYLw
+
 Reference manual: https://docs.google.com/document/d/1e4hL9Z7BLIoUlErWgJOngnSMYLXjfnsZB9BtlwhTC6U/edit?usp=sharing
 
-Introduction video: https://www.youtube.com/watch?v=3zGTsi4AYLw
+Visit my YouTube channel: https://www.youtube.com/channel/UCXYQcMpUBT3aaQKfmAVJNow
 
-YouTube channel: https://www.youtube.com/channel/UCXYQcMpUBT3aaQKfmAVJNow
-
-You like this project and want to give something back? https://www.paypal.me/carstenherting Thank you so much for your kind support!
+Do you like this project and want to give something back? https://www.paypal.me/carstenherting Thank you so much for your support!
 
 ● Clean 'Von-Neumann' architecture, 8-bit data bus, 16-bit address bus, 24 control signals
 
