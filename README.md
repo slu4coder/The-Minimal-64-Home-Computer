@@ -12,6 +12,8 @@ Visit my YouTube channel: https://www.youtube.com/channel/UCXYQcMpUBT3aaQKfmAVJN
 
 Do you like this project and want to give something back? https://www.paypal.me/carstenherting Thank you so much for your support!
 
+FEATURES
+
 ● Clean 'Von-Neumann' architecture, 8-bit data bus, 16-bit address bus, 24 control signals
 
 ● 64KB RAM, 512KB FLASH SSD with file system (format, load, save, dir, delete)
