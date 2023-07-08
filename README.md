@@ -4,7 +4,7 @@
 
 Here is my take on 80's home computer magic: The most computer from the least logic or the shortest way from TTL to Space Invaders.
 
-Introductory video: https://www.youtube.com/watch?v=3zGTsi4AYLw
+Introductory videos: https://www.youtube.com/watch?v=3zGTsi4AYLw, https://www.youtube.com/watch?v=FJsnKu20ch8
 
 Reference manual: https://docs.google.com/document/d/1e4hL9Z7BLIoUlErWgJOngnSMYLXjfnsZB9BtlwhTC6U/edit?usp=sharing
 
