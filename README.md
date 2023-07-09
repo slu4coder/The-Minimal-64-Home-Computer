@@ -10,7 +10,7 @@ Reference manual: https://docs.google.com/document/d/1e4hL9Z7BLIoUlErWgJOngnSMYL
 
 Visit my YouTube channel: https://www.youtube.com/channel/UCXYQcMpUBT3aaQKfmAVJNow
 
-Do you like this project and want to give something back? https://www.paypal.me/carstenherting Thank you for your support!
+Like this project and want to give something back? https://www.paypal.me/carstenherting
 
 FEATURES
 
