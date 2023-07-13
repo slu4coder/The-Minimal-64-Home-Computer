@@ -14,6 +14,8 @@ Like this project and want to give something back? https://www.paypal.me/carsten
 
 FEATURES
 
+● Only 56 74HCxx logic ICs, 1x 6C1008 SRAM, 4x 39SF0x0 FLASH, BUT NO MICROCONTROLLER!
+
 ● Textbook 'Von-Neumann' architecture, 8-bit data bus, 16-bit address bus, 24 control signals
 
 ● 64KB RAM, 512KB FLASH SSD with file system (format, load, save, dir, delete)
@@ -21,8 +23,6 @@ FEATURES
 ● Monochrome VGA output 400 x 240 pixels, PS/2, expansion slot and serial UART port
 
 ● 8MHz system clock, 6MHz CPU clock with 0.84Mips (2x Commodore 64)
-
-● Only 56(!) 74HCxx logic ICs, 1x 6C1008 SRAM, 4x 39SF0x0 FLASH
 
 ● 128 instructions including conditional branching, subroutines, stack and word operations
 
