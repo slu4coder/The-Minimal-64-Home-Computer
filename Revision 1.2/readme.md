@@ -1,3 +1,3 @@
-# Hardware revision 1.2
+# Hardware Revision 1.2
 
-See the 'Minimal 64 Reference Manual' for the bill of materials (BOM).
+For the bill of materials (BOM) please refer to the 'Minimal 64 Reference Manual' section 'Hardware': 
