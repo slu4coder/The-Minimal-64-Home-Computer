@@ -1,1 +1,1 @@
-'asm.py' is a cross-platform assembler written in Python.
+Minimalistic cross-platform assembler written in Python.
