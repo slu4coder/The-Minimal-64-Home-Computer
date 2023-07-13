@@ -1,5 +1,6 @@
-# MIN Programs
+# 'Min' Programs
 
-Programs written in MIN, a Python-like high-level interpreted programming language running natively on the MINIMAL 64.
+'Min' is a Python-like high-level programming language running natively on the 'Minimal 64'.
+The interpreter 'min.asm' assembly source code is located in the '../asm' section.
 
-The interpreter 'min.asm' assembly source code is located in the ../asm section.
+See 'Min's EBNF Language Definition.txt' for more information.
