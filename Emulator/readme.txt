@@ -1,1 +1,0 @@
-Note: On some graphic cards, 60Hz VSYNC is not detected correctly. In that case, set the frame rate manually to 60Hz from within your graphic card's control center.
