@@ -314,8 +314,8 @@ BCC|5d|Branch on C clear |PC    |abs   2|-|---| 5
 BCS|5e|Branch on C Set   |PC    |abs   2|-|---| 5
 BPL|5f|Branch on plus    |PC    |abs   2|-|---| 5
 BMI|60|Branch on minus   |PC    |abs   2|-|---| 5
-BLE|61|Branch less or eq |PC    |abs   2|-|---| 5
-BGT|62|Branch greater    |PC    |abs   2|-|---| 5
+BGT|61|Branch greater    |PC    |abs   2|-|---| 5
+BLE|62|Branch less or eq |PC    |abs   2|-|---| 5
 ---+--+------------------+------+-------+-+---+--
 TAX|63|Transfer A to X   |X     |-     0|-|---| 6
 TXA|64|Transfer X to A   |A     |-     0|R|---| 6
