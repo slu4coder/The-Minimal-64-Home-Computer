@@ -1,4 +1,4 @@
-# Native software of the 'Minimal 64 Home Computer'
+# Native Software of the 'Minimal 64 Home Computer'
 
 o '.asm' denotes assembly source code.
 
