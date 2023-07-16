@@ -72,6 +72,7 @@ void draw()
   for(int i=0; i<512*252; i+=8) // 64 bytes per row, 252 rows
   {
     byte b = mRam[videoAddress++]; // fetch next byte of VRAM    
+//    for(int j=0; j<8; j++) { videoRam.pixels[i+j] = (b & 1) == 1 ? 0xffb0ffd0 : 0xff20282f; b>>=1; }
     for(int j=0; j<8; j++) { videoRam.pixels[i+j] = (b & 1) == 1 ? 0xffb0ffd0 : 0xff20282f; b>>=1; }
   }
 
@@ -194,7 +195,7 @@ int GetAddr(int adr) { return ReadMem(adr++) | (ReadMem(adr++) << 8); } // get a
 
 int DoInstruction() // handle all instructions
 {
-  int inst = ReadMem(mPC++); // fetch instruction at program counter
+  int inst = ReadMem(mPC++) & 127; // fetch 7-bit instruction at program counter
   switch(inst) // process the instruction
   {
     case 0: break; // NOP
