@@ -214,7 +214,7 @@ LL4|10|Logic shift left 4|A     |-     0|R|RRR| 8
 LL5|11|Logic shift left 5|A     |-     0|R|RRR| 9
 LL6|12|Logic shift left 6|A     |-     0|R|RRR|10
 LL7|13|Logic shift left 7|A     |-     0|R|RRR|11
-LSR|14|Logic shift right |A     |-     0|R|RRR|13
+LSR|14|Logic shift right |A     |-     0|R|RRR|12
 ---+--+------------------+------+-------+-+---+--
 ROL|15|Rotate left 1     |A     |-     0|R|RRR| 5
 RL2|16|Rotate left 2     |A     |-     0|R|RRR| 6
@@ -279,9 +279,9 @@ SCB|43|Sub with carry in |byte,A|abs   2|R|RRR| 9
 ANB|44|Bitwise AND       |byte,A|abs   2|R|---| 8
 ORB|45|Bitwise OR        |byte,A|abs   2|R|---| 8
 LLB|46|Shift left        |byte,A|abs   2|R|RRR| 8
-LRB|47|Shift right       |byte,A|abs   2|R|RRR| 8
+LRB|47|Shift right       |byte,A|abs   2|R|RRR|15
 RLB|48|Rotate left       |byte,A|abs   2|R|RRR| 8
-RRB|49|Rotate right      |byte,A|abs   2|R|RRR| 8
+RRB|49|Rotate right      |byte,A|abs   2|R|RRR|15
 %6. CPU INSTRUCTION SET (6/8)
 
 INS|HX|DESCRIPTION       |TARGET|OP SIZE|A|NCZ|CL
