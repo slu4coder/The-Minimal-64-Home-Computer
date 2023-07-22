@@ -2,17 +2,18 @@
 M I N I M A L  6 4  HOME COMPUTER MANUAL  by slu4
 -------------------------------------------------
 
-Welcome to the MINIMAL 64. This document provides
-you with a reference and brief introduction on
-how to operate this computer and its toolchain.
+Welcome to the 'MINIMAL 64'. This file provides a
+brief introduction on how to use this computer.
 
 1. OS COMMANDS (1/2)
 
 The 'MinOS' operating system loads and executes
-any filename entered as a separate program. So
+any entered filename as a separate program. So
 any file can be considered an 'OS command'. MinOS
 comes with the following built-in commands
 (parameters in square [] brackets are optional):
+
+'run' [<x>] starts execution at hex address <x>.
 
 'dir' displays the file directory of the SSD.
 
