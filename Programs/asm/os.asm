@@ -832,7 +832,12 @@ OS_ScanPS2:       INK CPI 0xff BEQ key_rts                     ; fast readout of
   ps2_ptr:            0xffff STA ps2_ascii                     ; read table data from FLASH memory and store ASCII code
                       BFF RTS                                  ; do not use A so that this routine can be called often without processing key immediately
   key_release:    LDI 0x01 STA ps2_release                     ; IMPROVED PS2 RELEASE DETECTION - WORKS GREATER!
-  key_release_w8: INK CPI 0xff BEQ key_release_w8 JPA key_reentry
+                    LDI 0 STA ps2_wait_cntr
+    key_wait:       INK CPI 0xff BNE key_reentry
+                    NOP NOP NOP NOP NOP NOP NOP NOP NOP NOP    
+                    NOP NOP NOP                                ; slow down wait loop
+                    INB ps2_wait_cntr CPI 0 BNE key_wait
+                    JPA key_clearrel                           ; ignore this 0xf0. We have missed it's datum
   key_shift:      LDA ps2_release NEG STA ps2_shift
                       JPA key_clearrel
   key_alt:        LDA ps2_release NEG STA ps2_alt
@@ -846,6 +851,8 @@ OS_ScanPS2:       INK CPI 0xff BEQ key_rts                     ; fast readout of
   ps2_alt:        0xff
   ps2_release:    0xff
   ps2_ascii:      0x00                                         ; store "pressed" key code here
+  ps2_wait_cntr:  0x00
+
 
 ; --------------------------------------------------------------------------------------------
 ; Resets the state of keys ALT, SHIFT, CTRL to avoid lock-up after a longer operation (CTRL+V)
