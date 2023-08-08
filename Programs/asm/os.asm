@@ -831,11 +831,8 @@ OS_ScanPS2:       INK CPI 0xff BEQ key_rts                     ; fast readout of
   key_ptrok:          LDI 0x01 BNK LDA                         ; switch to PS2 table in FLASH
   ps2_ptr:            0xffff STA ps2_ascii                     ; read table data from FLASH memory and store ASCII code
                       BFF RTS                                  ; do not use A so that this routine can be called often without processing key immediately
-  key_release:    LDI 0x01 STA ps2_release                     ; IMPROVED PS2 RELEASE DETECTION - WORKS GREAT!
-                  LDI 0
-    key_wait:     NOP NOP NOP NOP NOP INC BCC key_wait         ; wait 4.6ms for next datagram
-                    INK CPI 0xff BNE key_reentry               ; treat the actual key, too
-                      JPA key_clearrel                         ; ignore this 0xf0. We have missed it's datum.
+  key_release:    LDI 0x01 STA ps2_release                     ; IMPROVED PS2 RELEASE DETECTION - WORKS GREATER!
+  key_release_w8: INK CPI 0xff BEQ key_release_w8 JPA key_reentry
   key_shift:      LDA ps2_release NEG STA ps2_shift
                       JPA key_clearrel
   key_alt:        LDA ps2_release NEG STA ps2_alt
