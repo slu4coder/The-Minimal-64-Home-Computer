@@ -568,12 +568,15 @@ KeyHandler:     INK CPI 0xff BEQ key_rts
 isa:            LDA pressed STA left ORI 1 STA pressed CLB right RTS
 isspace:        LDA pressed STA fire ORI 1 STA pressed RTS
 isd:            LDA pressed STA right ORI 1 STA pressed CLB left RTS
-release:        LDI 0
-  key_wait:     NOP NOP NOP NOP NOP INC BCC key_wait         ; wait 3.8ms for datagram following 0xf0
-                INK CPI 0xff BEQ key_rts										 ; no 2nd datagram -> avoid
-                  CLB pressed JPA key_entry									 ; released key was received -> analyze it
+release:        LDI 0 STA released_cntr
+  key_wait:		INK CPI 0xff BNE key_release
+  				NOP NOP NOP NOP NOP NOP NOP NOP NOP NOP		; wait for key up datagram
+  				NOP NOP NOP
+  				INB released_cntr CPI 0 BNE key_wait
+  				JPA key_rts									; no 2nd datagram -> avoid
+  key_release:  CLB pressed JPA key_entry					; released key was received -> analyze it
 pressed:        1
-
+released_cntr:	0
 ; print number 000 - 999 +  '0'
 ; push: number_lsb, number_msb
 ; pull: #, #
