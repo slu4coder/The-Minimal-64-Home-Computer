@@ -2,7 +2,7 @@
 ; *****                                                        *****
 ; *****       MinOS 2.0 for the MINIMAL 64 Home Computer       *****
 ; *****                                                        *****
-; ***** written by Carsten Herting - last update Apr 14th 2023 *****
+; ***** written by Carsten Herting - last update Aug 10th 2023 *****
 ; *****                                                        *****
 ; ******************************************************************
 
@@ -807,17 +807,17 @@ OS_PrintHex:   LDS 3 RL5 ANI 15 ADI '0'                        ; extract MSB
 
 ; -------------------------------------------------------------------------------------
 ; Reads out the PS2 keyboard register. Stores ASCII code of pressed key in 'ps2_ascii'.
-; Call this routine in intervals < 835µs (~5000 clocks) to not miss any PS2 datagrams.
+; Call this routine in intervals < 835µs (5010 clocks) to not miss any PS2 datagrams.
 ; In case a '0xf0 release' is detected, the routine waits some time for next datagram.
 ; modifies: ps2_ascii
 ; -------------------------------------------------------------------------------------
-OS_ScanPS2:       INK CPI 0xff BEQ key_rts                     ; fast readout of keyboard register
-  key_reentry:      CPI 0xf0 BEQ key_release
+OS_ScanPS2:       INK CPI 0xff BEQ key_rts                     ; fast readout of keyboard register, nothing in?
+  key_reentry:      CPI 0xf0 BEQ key_release                   ; key release detected?
                       CPI 0x11 BEQ key_alt                     ; special keys pressed?
                         CPI 0x12 BEQ key_shift
                           CPI 0x59 BEQ key_shift
                             CPI 0x14 BEQ key_ctrl
-                              CPI 0xe0 BEQ key_rts             ; ignore special marker for cursor keys
+                              CPI 0xe0 BEQ key_rts             ; ignore "special" marker for cursor keys
                     ANI 0x7f STA ps2_ptr+0                     ; set scan table index according to SHIFT / ALT / CTRL
                     LDA ps2_release CPI 1 BEQ key_clearrel     ; marked as a release? -> don't store
                       LDI >PS2Table STA ps2_ptr+1
@@ -831,13 +831,15 @@ OS_ScanPS2:       INK CPI 0xff BEQ key_rts                     ; fast readout of
   key_ptrok:          LDI 0x01 BNK LDA                         ; switch to PS2 table in FLASH
   ps2_ptr:            0xffff STA ps2_ascii                     ; read table data from FLASH memory and store ASCII code
                       BFF RTS                                  ; do not use A so that this routine can be called often without processing key immediately
-  key_release:    LDI 0x01 STA ps2_release                     ; IMPROVED PS2 RELEASE DETECTION - WORKS GREATER!
-                    LDI 0 STA ps2_wait_cntr
-    key_wait:       INK CPI 0xff BNE key_reentry
-                    NOP NOP NOP NOP NOP NOP NOP NOP NOP NOP    
-                    NOP NOP NOP                                ; slow down wait loop
-                    INB ps2_wait_cntr CPI 0 BNE key_wait
-                    JPA key_clearrel                           ; ignore this 0xf0. We have missed it's datum
+
+  key_release:    LDI 0x01 STA ps2_release                     ; IMPROVED PS2 RELEASE DETECTION by Michael Kamprath - WORKS GREATER!
+                    CLB ps2_wait_cntr                          ; waits for the follow-up of 0xf0 for
+    key_wait:       INK CPI 0xff BNE key_reentry               ; a maximum of 10.1ms to allow
+                      NOP NOP NOP NOP NOP NOP NOP NOP NOP NOP  ; for slower PS/2 keyboads
+                      NOP NOP NOP                              ; ... slow down wait loop
+                      INB ps2_wait_cntr BCC key_wait           ; and repeat max. 256 times
+                        JPA key_clearrel                       ; time-out: ignore 0xf0 (missed proceeding datum)
+
   key_shift:      LDA ps2_release NEG STA ps2_shift
                       JPA key_clearrel
   key_alt:        LDA ps2_release NEG STA ps2_alt
@@ -851,23 +853,23 @@ OS_ScanPS2:       INK CPI 0xff BEQ key_rts                     ; fast readout of
   ps2_alt:        0xff
   ps2_release:    0xff
   ps2_ascii:      0x00                                         ; store "pressed" key code here
-  ps2_wait_cntr:  0x00
-
+  ps2_wait_cntr:  0xff
 
 ; --------------------------------------------------------------------------------------------
 ; Resets the state of keys ALT, SHIFT, CTRL to avoid lock-up after a longer operation (CTRL+V)
+; that did not allow for regular polling.
 ; --------------------------------------------------------------------------------------------
 OS_ResetPS2:      LDI 0xff
                   STA ps2_shift STA ps2_ctrl STA ps2_alt
                   RTS
 
 ; *******************************************************************************
-; Read input from any input source
-; Returns either 0 for no input or the ASCII code of the last pressed key
+; Reads input from any input source (either serial or PS/2)
+; Returns in A either 0 for no input or the ASCII code of the last pressed key
 ; *******************************************************************************
 OS_ReadInput:     INP CPI 0xff BNE ri_exit                     ; check for direct terminal input
-                    JPS OS_ScanPS2                             ; read/clear PS2 register and convert it to ASCII
-                    LDA ps2_ascii CLB ps2_ascii                ; load ASCII key code into A, CLB does not change A
+                    JPS OS_ScanPS2                             ; read & clear the PS2 register and convert to ASCII
+                    LDA ps2_ascii CLB ps2_ascii                ; transfer ASCII key code into A, CLB does not change A
   ri_exit:        RTS                                          ; returns A
 
 ; *******************************************************************************
@@ -875,11 +877,11 @@ OS_ReadInput:     INP CPI 0xff BNE ri_exit                     ; check for direc
 ; Returns either 0 for no input or the ASCII code of the pressed key
 ; *******************************************************************************
 OS_WaitInput:     WIN                                          ; FAST testing (read/clear must happen within 32/4*3=24 cycles of receiving with UART)
-                  INP CPI 0xff BNE wi_exit
-                    JPS OS_ScanPS2                             ; read/clear PS/2 register, UART already cleared
+                  INP CPI 0xff BNE wi_exit                     ; direct serial input?
+                    JPS OS_ScanPS2                             ; read & clear PS/2 register, UART already cleared
                     LDA ps2_ascii CPI 0 BEQ OS_WaitInput       ; Is there a new ASCII key code? No => repeat
-                      CLB ps2_ascii                            ; CLB does not change A
-  wi_exit:        RTS                                          ; clear keyboard and return uart in A
+                      CLB ps2_ascii                            ; clear keyboard (CLB does not change A)
+  wi_exit:        RTS                                          ; return in A
 
 OS_Image_End:                                                  ; address of first byte beyond OS kernel code
 
