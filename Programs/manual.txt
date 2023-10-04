@@ -1,4 +1,4 @@
-%-------------------------------------------------
+-------------------------------------------------
 M I N I M A L  6 4  HOME COMPUTER MANUAL  by slu4
 -------------------------------------------------
 
@@ -19,15 +19,14 @@ comes with the following built-in commands
 
 'del <file>' deletes a file on the SSD.
 
-'show <file>' displays a text file page by page
-  Page breaks are marked by a 'percentage' sign.
+'show <file>' displays a text file page by page.
 
 'format' formats SSD user area (banks 3..127).
 
 'defrag' frees up unused SSD storage fragments.
 
-'memset <x> <y> <d>' fills RAM <x>..<y> with <d>.
-%1. OS COMMANDS (2/2)
+'memset <x> <y> <d>' fills RAM <x>..<y> with <d>.%
+1. OS COMMANDS (2/2)
 
 'mon [<x>]'  starts a memory monitor [at <x>].
   ESC        exits the monitor to the OS prompt.
@@ -55,8 +54,8 @@ comes with the following built-in commands
     to clear the RAM.
   o Type 'receive ENTER' and paste the HEX file
     image to the Minimal's RAM as serial input.
-  o On the Minimal, type 'flash ENTER' and reset.
-%2. MEMORY MAP
+  o On the Minimal, type 'flash ENTER' and reset.%
+2. MEMORY MAP
 
 0x0000..0x0fff 4KB of selected FLASH bank or RAM:
 
@@ -82,8 +81,8 @@ comes with the following built-in commands
 0xff00         CPU X register
 0xff01         CPU Y register
 0xff02..0xfffe CPU stack memory
-0xffff         CPU stack pointer LSB
-%3. TEXT EDITOR 'edit [<file>]'
+0xffff         CPU stack pointer LSB%
+3. TEXT EDITOR 'edit [<file>]'
 
 The text editor resides in RAM 0x0000..0x0fff.
 Text data is stored from address 0x1000 onwards.
@@ -106,8 +105,8 @@ CTRL v  Inserts a text block from clipboard at
 
 CTRL r  Receives text via UART and inserts it at
         the current position. Press ESC to end.
-CTRL t  Transmits the current text file via UART.
-%4. HIGH-LEVEL LANGUAGE 'min'
+CTRL t  Transmits the current text file via UART.%
+4. HIGH-LEVEL LANGUAGE 'min'
 
 MIN is a fast high-level Python-like interpreted
 programming language. 'min <file>' executes your
@@ -134,8 +133,8 @@ o decimal and HEX '0xffff' numbers, ".." strings
 o print(..) for text and decimal number output
 o 'use "<library>"' for recursive file import
 o 'std.min' library implements: pos, rnd, clear,
-   line, rect, dot, str, len, strcmp, key, etc.
-%5. ASSEMBLER 'asm' (1/2)
+   line, rect, dot, str, len, strcmp, key, etc.%
+5. ASSEMBLER 'asm' (1/2)
 
 ASM is MINIMAL's native assembler. To assemble
 a sourcefile <file> from SSD, type 'asm <file>'.
@@ -158,8 +157,8 @@ Default for MC and PC is address 0x8000.
 
 o Write mnemonics in capital letters (e.g., LDI).
 o Write HEX numbers in lower case (e.g., 0xff).
-o Separate elements with a space and/or comma.
-%5. ASSEMBLER 'asm' (2/2)
+o Separate elements with a space and/or comma.%
+5. ASSEMBLER 'asm' (2/2)
 
 label:      defines a label as the current PC
 ; comment   makes the rest of the line a comment
@@ -177,8 +176,8 @@ Example:
 #org 0x8000             ; sets start address
             LDI 0xff    ; loads 0xff into A
             STA 0xc30c  ; deposits A in VRAM
-            JPA 0xb003  ; jumps back to OS prompt
-%6. CPU INSTRUCTION SET (1/8)
+            JPA 0xb003  ; jumps back to OS prompt%
+6. CPU INSTRUCTION SET (1/8)
 
 INS     = instruction mnemonic  | -   = unchanged
 HX      =  hexadecimal opcode   | ?   = undefined
@@ -203,8 +202,8 @@ NEG|08|Negate            |A     |-     0|R|RZR| 6
 INC|09|Increment         |A     |-     0|R|RRR| 5
 DEC|0a|Decrement         |A     |-     0|R|RRR| 5
 CLC|0b|Clear carry in    |-     |-     0|-|100| 5
-SEC|0c|Set carry in      |-     |-     0|-|011| 5
-%6. CPU INSTRUCTION SET (2/8)
+SEC|0c|Set carry in      |-     |-     0|-|011| 5%
+6. CPU INSTRUCTION SET (2/8)
 
 INS|HX|DESCRIPTION       |TARGET|OP SIZE|A|NCZ|CL
 ---+--+------------------+------+-------+-+---+--
@@ -224,8 +223,8 @@ RL4|18|Rotate left 4     |A     |-     0|R|RRR| 8
 RL5|19|Rotate left 5     |A     |-     0|R|RRR| 9
 RL6|1a|Rotate left 6     |A     |-     0|R|RRR|10
 RL7|1b|Rotate left 7     |A     |-     0|R|RRR|11
-ROR|1c|Rotate right      |A     |-     0|R|RRR|12
-%6. CPU INSTRUCTION SET (3/8)
+ROR|1c|Rotate right      |A     |-     0|R|RRR|12%
+6. CPU INSTRUCTION SET (3/8)
 
 INS|HX|DESCRIPTION       |TARGET|OP SIZE|A|NCZ|CL
 ---+--+------------------+------+-------+-+---+--
@@ -249,8 +248,8 @@ SCA|2c|Sub with carry in |A     |abs   2|R|RRR| 8
 CPA|2d|Compare           |A     |abs   2|-|RRR| 8
 ANA|2e|Bitwise AND       |A     |abs   2|R|---| 8
 ORA|2f|Bitwise OR        |A     |abs   2|R|---| 8
-XRA|30|Bitwise XOR       |A     |imm   1|R|---|15
-%6. CPU INSTRUCTION SET (4/8)
+XRA|30|Bitwise XOR       |A     |imm   1|R|---|15%
+6. CPU INSTRUCTION SET (4/8)
 
 INS|HX|DESCRIPTION       |TARGET|OP SIZE|A|NCZ|CL
 ---+--+------------------+------+-------+-+---+--
@@ -263,8 +262,8 @@ ACR|36|Add with carry in |A     |rel   2|R|RRR|11
 SCR|37|Sub with carry in |A     |rel   2|R|RRR|11
 CPR|38|Compare           |A     |rel   2|-|RRR|11
 ANR|39|Bitwise AND       |A     |rel   2|R|---|11
-ORR|3a|Bitwise OR        |A     |rel   2|R|---|11
-%6. CPU INSTRUCTION SET (5/8)
+ORR|3a|Bitwise OR        |A     |rel   2|R|---|11%
+6. CPU INSTRUCTION SET (5/8)
 
 INS|HX|DESCRIPTION       |TARGET|OP SIZE|A|NCZ|CL
 ---+--+------------------+------+-------+-+---+--
@@ -282,8 +281,8 @@ ORB|45|Bitwise OR        |byte,A|abs   2|R|---| 8
 LLB|46|Shift left        |byte,A|abs   2|R|RRR| 8
 LRB|47|Shift right       |byte,A|abs   2|R|RRR|15
 RLB|48|Rotate left       |byte,A|abs   2|R|RRR| 8
-RRB|49|Rotate right      |byte,A|abs   2|R|RRR|15
-%6. CPU INSTRUCTION SET (6/8)
+RRB|49|Rotate right      |byte,A|abs   2|R|RRR|15%
+6. CPU INSTRUCTION SET (6/8)
 
 INS|HX|DESCRIPTION       |TARGET|OP SIZE|A|NCZ|CL
 ---+--+------------------+------+-------+-+---+--
@@ -304,8 +303,8 @@ RTS|56|Return from sub   |PC    |-     0|-|---|12
 PHS|57|Push on stack     |stack |-     0|-|---|11
 PLS|58|Pull from stack   |A     |-     0|R|---| 7
 LDS|59|Load from stack   |A     |off   1|R|---| 8
-STS|5a|Store A on stack  |stack |off   1|-|---|15
-%6. CPU INSTRUCTION SET (7/8)
+STS|5a|Store A on stack  |stack |off   1|-|---|15%
+6. CPU INSTRUCTION SET (7/8)
 
 INS|HX|DESCRIPTION       |TARGET|OP SIZE|A|NCZ|CL
 ---+--+------------------+------+-------+-+---+--
@@ -323,7 +322,7 @@ TXA|64|Transfer X to A   |A     |-     0|R|---| 6
 TXY|65|Transfer X to Y   |Y     |-     0|-|---| 7
 LXI|66|Load from         |X     |imm   1|-|---| 7
 LXA|67|Load from         |X     |abs   2|-|---|10
-LAX|68|Load from abs+X 1)|A     |abs,X 2|R|???|13
+LTX|68|Load from table * |A     |abs+X 2|R|???|12
 INX|69|Increment         |X     |-     0|R|RRR| 7
 DEX|6a|Decrement         |X     |-     0|R|RRR| 7
 ADX|6b|Add               |A     |-     0|R|RRR| 7
@@ -331,8 +330,8 @@ SBX|6c|Subtract          |A     |-     0|R|RRR| 7
 CPX|6d|Compare           |A     |-     0|R|RRR| 7
 ANX|6e|Bitwise AND       |A     |-     0|R|---| 7
 ORX|6f|Bitwise OR        |A     |-     0|R|---| 7
-XRX|70|Bitwise XOR       |A     |-     0|R|---|13
-%6. CPU INSTRUCTION SET (8/8)
+XRX|70|Bitwise XOR       |A     |-     0|R|---|13%
+6. CPU INSTRUCTION SET (8/8)
 
 INS|HX|DESCRIPTION       |TARGET|OP SIZE|A|NCZ|CL
 ---+--+------------------+------+-------+-+---+--
@@ -341,7 +340,7 @@ TYA|72|Transfer Y to A   |A     |-     0|R|---| 7
 TYX|73|Transfer Y to X   |X     |-     0|-|---|10
 LYI|74|Load from         |Y     |imm   1|-|---| 8
 LYA|75|Load from         |Y     |abs   2|-|---|11
-LAY|76|Load from abs+Y 1)|A     |abs,Y 2|R|???|14
+LTA|76|Load from table * |A     |abs+A 2|R|???| 7
 INY|77|Increment         |Y     |-     0|R|RRR| 8
 DEY|78|Decrement         |Y     |-     0|R|RRR| 8
 ADY|79|Add               |A     |-     0|R|RRR| 8
@@ -353,8 +352,8 @@ XRY|7e|Bitwise XOR       |A     |-     0|R|---|14
 ---+--+------------------+------+-------+-+---+--
 HLT|7f|Halt CPU          |-     |-     0|?|???| -
 
-  1) takes 2 more cycles crossing a page boundary
-%7. HARDWARE SPECIFICATION
+  * takes 2 more cycles crossing a page boundary%
+7. HARDWARE SPECIFICATION
 
 System clock rate............................8MHz
 
@@ -372,4 +371,7 @@ UART format 1 start bit, 8 data bits, 2 stop bits
 UART transmit delay.....................10ms/line
 
 Set the terminal emulation to 50 x 30 characters.
-%
+
+
+
+                END OF DOCUMENT%
