@@ -1119,7 +1119,7 @@ Mnemonics:      'NOP', 'BNK', 'BFF', 'WIN', 'INP', 'INK', 'OUT',
   ; --------------------------------------------------
   DirStart:       LDI <dirtext PHS LDI >dirtext PHS JPS _Print PLS PLS ; print the directory headline
                   LDI 2 STA PtrA+2 BNK CLW PtrA                        ; FLASH on, point PtrA to start of SSD
-                  LDI 0x07 STA PtrC+2 LDI 0xe0 STA PtrC+1 CLB PtrC+0   ; 0x7e banks = SSD - 8KB -> PtrC in chunks of 16 bytes
+                  LDI 0x07 STA PtrC+2 LDI 0xe0 STA PtrC+1 CLB PtrC+0   ; PtrC holds SSD bytesize 0x07f000
 
   dc_lookfiles:   LDA PtrA+2 BNK LDR PtrA CPI 0xff BEQ dc_endreached   ; end of used area reached?
 
@@ -1127,13 +1127,13 @@ Mnemonics:      'NOP', 'BNK', 'BFF', 'WIN', 'INP', 'INK', 'OUT',
                     LDA PtrA+0 STA _ReadNum+0                          ; copy PtrA and PtrA+2 for printing
                     LDA PtrA+1 STA _ReadNum+1
                     LDA PtrA+2 BNK STA _ReadNum+2
-                    LDI 20 ADW PtrA JPS dc_FlashA                      ; read start address -> PtrE
-                    LDR PtrA STA PtrE+0 INW PtrA JPS dc_FlashA
-                    LDR PtrA STA PtrE+1 INW PtrA JPS dc_FlashA
-                    LDR PtrA STA PtrB+0 INW PtrA JPS dc_FlashA         ; read bytesize -> PtrB, F
-                    LDR PtrA STA PtrB+1 INW PtrA JPS dc_FlashA         ; PtrA, PtrA+2 now point to data section
+                    LDI 20 ADW PtrA JPS OS_FlashA                      ; read start address -> PtrE
+                    LDR PtrA STA PtrE+0 INW PtrA JPS OS_FlashA
+                    LDR PtrA STA PtrE+1 INW PtrA JPS OS_FlashA
+                    LDR PtrA STA PtrB+0 INW PtrA JPS OS_FlashA         ; read bytesize -> PtrB, F
+                    LDR PtrA STA PtrB+1 INW PtrA JPS OS_FlashA         ; PtrA, PtrA+2 now point to data section
                     LDA PtrB+0 ADW PtrA+0                              ; add data byte size to reach next file pos
-                    LDA PtrB+1 ADB PtrA+1 JPS dc_FlashA
+                    LDA PtrB+1 ADB PtrA+1 JPS OS_FlashA
                     LDA PtrB+0 SBW PtrC LDI 0 SCB PtrC+2               ; subtract data bytesize in PtrB from PtrC
                     LDA PtrB+1 SBW PtrC+1
                     LDI 24 SBW PtrC LDI 0 SCB PtrC+2                   ; subtract headersize from PtrC
@@ -1167,16 +1167,6 @@ Mnemonics:      'NOP', 'BNK', 'BFF', 'WIN', 'INP', 'INK', 'OUT',
   dirtext:      10, 'FILENAME........... DEST ..SIZE (ESC to stop)', 10, 0
   freetext:     'FREE ', 10, 0
 
-  ; Produces a FLASH/BANK address in the correct form: PtrA+2: bank, PtrA0..1: 12bit section address
-  ; Adds the value of bits 12-15 of PtrA to PtrA+2, updates bank register and clears upper nibble of PtrA
-  ; Call this routine everytime a FLASH pointer PtrA is modified!
-  ; modifies: PtrA+0..2, bank register
-  dc_FlashA:      LDA PtrA+1 RL5 ANI 0x0f    ; is something in the upper nibble?
-                  CPI 0 BEQ dc_farts
-                    ADB PtrA+2 BNK           ; there was something -> update bank register PtrA+2
-                    LDI 0x0f ANB PtrA+1      ; correct PtrA+1
-    dc_farts:     RTS
-
   DirEnd:
 
 ; **********************************************************************************************************
@@ -1190,11 +1180,15 @@ Mnemonics:      'NOP', 'BNK', 'BFF', 'WIN', 'INP', 'INK', 'OUT',
   ; ---------------------------------------------------------------
   ; Defragments the SSD by removing/formating/freeing deleted parts
   ; usage: "defrag <ENTER>"
+  ; dg_bin: FLASH has been processed behind this position
+  ; dg_next: pointer beyond current file in FLASH
+  ; dg_ram: pointer to RAM buffer 0xa000..0xafff
+  ; dg_newbank: next sector to be used
   ; ---------------------------------------------------------------
-  DefragStart:    LDI 3 STA dg_next+2 STA dg_bis+2 STA dg_newbank      ; pnext = pbis = FLASH start
+  DefragStart:    LDI 3 STA dg_next+2 STA dg_bis+2 STA dg_newbank      ; pnext = pbis = user SSD start
                   CLW dg_next CLW dg_bis
 
-    dg_nextchunk: CLW dg_ram                                           ; reset RAM buffer pointer
+    dg_nextchunk: LDI <0xa000 STA dg_ram+0 LDI >0xa000 STA dg_ram+1    ; reset RAM buffer pointer to buffer start
 
     dg_biseqnext: LDA dg_bis+0 CPA dg_next+0 BNE dg_copyabyte          ; bis = next?
                     LDA dg_bis+1 CPA dg_next+1 BNE dg_copyabyte
@@ -1206,11 +1200,11 @@ Mnemonics:      'NOP', 'BNK', 'BFF', 'WIN', 'INP', 'INK', 'OUT',
       dg_checknext:     LDA PtrA+2 BNK LDR PtrA                        ; READ BYTE AT "NEXT" LOCATION
                         CPI 0xff BEQ dg_endofused                      ; END OF USED SSD AREA REACHED?
                           PHS                                          ; NO! -> store first byte of filename
-                          LDI 22 ADW PtrA JPS dg_FlashA                ; extract data bytesize
-                          LDR PtrA STA PtrB+0 INW PtrA JPS dg_FlashA   ; read bytesize -> PtrB
-                          LDR PtrA STA PtrB+1 INW PtrA JPS dg_FlashA   ; PtrA now point to data section
+                          LDI 22 ADW PtrA JPS OS_FlashA                ; extract data bytesize
+                          LDR PtrA STA PtrB+0 INW PtrA JPS OS_FlashA   ; read bytesize -> PtrB
+                          LDR PtrA STA PtrB+1 INW PtrA JPS OS_FlashA   ; PtrA now point to data section
                           LDA PtrB+0 ADW PtrA+0                        ; add data byte size to reach next file pos
-                          LDA PtrB+1 ADB PtrA+1 JPS dg_FlashA          ; PtrA points beyond current file
+                          LDA PtrB+1 ADB PtrA+1 JPS OS_FlashA          ; PtrA points beyond current file
                           LDA PtrA+0 STA dg_next+0                     ; WE HAVE AN UNTESTED NEW NEXT FILE LOCATION
                           LDA PtrA+1 STA dg_next+1
                           LDA PtrA+2 STA dg_next+2
@@ -1220,62 +1214,55 @@ Mnemonics:      'NOP', 'BNK', 'BFF', 'WIN', 'INP', 'INK', 'OUT',
                             LDA dg_next+1 STA dg_bis+1                 ; ... without copying it to RAM
                             LDA dg_next+2 STA dg_bis+2                 ; now PtrA = next = bis
                             JPA dg_checknext                           ; go look for a non-deleted file
-    dg_copythisfile:      LDI '#' PHS JPS _PrintChar PLS               ; signal a visible file
+    dg_copythisfile:      LDI 'f' PHS JPS _PrintChar PLS               ; signal a visible file
                           JPA dg_biseqnext                             ; reenter copying loop
 
-    dg_copyabyte: LDA dg_ram+1 CPI 0x80 BCC dg_ramokay                 ; is there enough space in RAM buffer?
+    dg_copyabyte: LDA dg_ram+1 SBI >0xa000 CPI >0x1000 BCC dg_ramokay  ; is still some space in RAM buffer?
                     ; RAM buffer is full => byte cannot be read and written
-                    JPS writeRAM LDA PtrB+1 CPI 0xff BEQ dg_nextchunk  ; formats and writes (unfinished) chunk
+                    JPS writeRAM LDA PtrB+1 CPI 0xff BEQ dg_nextchunk  ; formats and writes (unfinished) sector
       dg_error:       LDI <dg_errtxt PHS LDI >dg_errtxt PHS            ; error message
-                      JPS _Print
-                      JPA _Prompt
+                      JPS _Print JPA _Prompt
     dg_ramokay:   ; read a byte from 'dg_bis' to dg_ram
                   LDA dg_bis+2 BNK                                     ; set bank register for read
-                  LDR dg_bis BFF STR dg_ram                            ; read FLASH address and result store in RAM
-                  INW dg_ram INW dg_bis SBI 0x10 BCC dg_biseqnext
+                  LDR dg_bis STR dg_ram                                ; read FLASH address and result store in RAM
+                  INW dg_ram INW dg_bis SBI 0x10 BCC dg_biseqnext      ; correct dg_bis+0..2 pointer
                     STA dg_bis+1 INB dg_bis+2 JPA dg_biseqnext
 
-; writes a chunk of used data in RAM to FLASH starting at bank 'dg_newbank+1' 0x000
-  writeRAM:     CLW PtrA LDA dg_newbank STA PtrA+2                     ; set FLASH write destination
-                LDA dg_ram+0 STA PtrB+0                                ; bytesize = RAM "beyond" pointer
-                LDA dg_ram+1 STA PtrB+1
-                CLW PtrC                                               ; set RAM source 0x0000
+; writes a chunk of copied RAM data to FLASH starting at sector 'dg_newbank', FLASH addr 0x000
+; PtrA+0..2: FLASH destination
+; PtrB+0..1: RAM bytesize
+; PtrC+0..1: RAM source addr
+  writeRAM:     LDI '#' PHS JPS _PrintChar PLS                         ; indicate sector write
+                LDA dg_newbank STA PtrA+2 CLW PtrA                     ; set FLASH write destination
+                LDI >0xa000 SBB dg_ram+1 STA PtrB+1
+                LDA dg_ram+0 STA PtrB+0                                ; PtrB = bytesize
+                LDI <0xa000 STA PtrC+0                                 ; PtrC = RAM source
+                LDI >0xa000 STA PtrC+1
                 DEW dg_ram BCS dg_bytes                                ; calculate "last used" RAM location
-                  STA PtrB+0 STA PtrB+1 RTS                            ; return "success" since nothing was written
-  dg_bytes:     LDA dg_ram+1 RL5 ANI 0x0f TAX                          ; get nibble (bits 12-15), add 1 for number
-  dg_bankloop:  LDA dg_newbank PHS JPS OS_FLASHErase PLS               ; erase this FLASH bank
+                  STA PtrB+1 RTS                                       ; return 0xff = SUCCESS, nothing was written
+  dg_bytes:     LDA dg_newbank PHS JPS OS_FLASHErase PLS               ; erase this FLASH bank
                 INB dg_newbank                                         ; goto next free bank
-                DEX BCS dg_bankloop
-                  LDA PtrA+2 BNK                                       ; set bank register, everything else was set above
-                  JPS OS_FLASHWrite                                    ; write used RAM chunk to FLASH
-                  RTS
+                LDA PtrA+2 BNK                                         ; set bank register, anything else was set above
+                JPS OS_FLASHWrite                                      ; write used RAM chunk to FLASH
+                RTS
 
 ; end of used SSD area => write the rest of RAM buffer to FLASH, format all used banks above
   dg_endofused: JPS writeRAM LDA PtrB+1 CPI 0xff BNE dg_error          ; formats and writes (unfinished) chunk
                 DEW dg_bis BCS dg_laloop                               ; perform dg_bis-- to point to "last processed" location
-                  DEB dg_bis+2                                         ; calculate the max used FLASH bank
+                  DEB dg_bis+2 LDI 0x0f STA dg_bis+1                   ; calculate the max used FLASH bank
     dg_laloop:  LDA dg_newbank CPA dg_bis+2 BGT dg_raus
                   PHS JPS OS_FLASHErase PLS                            ; format this bank
+                  LDI '-' PHS JPS _PrintChar PLS                       ; indicate a freed-up sector
                   INB dg_newbank JPA dg_laloop
     dg_raus:    LDI 10 PHS JPS OS_PrintChar                            ; ENTER
                 JPA _Prompt                                            ; END
 
-  ; Produces a FLASH/BANK address in the correct form: PtrA+2: bank, PtrA0..1: 12bit section address
-  ; Adds the value of bits 12-15 of PtrA to PtrA+2, updates bank register and clears upper nibble of PtrA
-  ; Call this routine everytime a FLASH pointer PtrA is modified!
-  ; modifies: PtrA+0..2, bank register
-  dg_FlashA:      LDA PtrA+1 RL5 ANI 0x0f    ; is something in the upper nibble?
-                  CPI 0 BEQ dg_farts
-                    ADB PtrA+2 BNK           ; there was something -> update bank register PtrA+2
-                    LDI 0x0f ANB PtrA+1      ; correct PtrA+1
-    dg_farts:     RTS
+  dg_errtxt:      10, 'WRITE ERROR', 10, 0
 
-  dg_errtxt:      '?ERROR.', 10, 0
-
-  dg_ram:         0xffff                     ; pointer to next free RAM location (0x0000..0x8000)
-  dg_bis:         0xff, 0xffff               ; pointer (bank/sector addr) to last read location of FLASH
-  dg_next:        0xff, 0xffff               ; pointer beyond current file's FLASH area
-  dg_newbank:     0xff
+  dg_ram:         0xffff                     ; pointer to next free RAM location (0x8000..0xefff)
+  dg_bis:         0xffff, 0xff               ; pointer (bank/sector addr) to last read location of FLASH
+  dg_next:        0xffff, 0xff               ; pointer beyond current file's FLASH area
+  dg_newbank:     0xff                       ; next free bank
 
   DefragEnd:
 
@@ -1384,15 +1371,20 @@ Mnemonics:      'NOP', 'BNK', 'BFF', 'WIN', 'INP', 'INK', 'OUT',
     sh_nextpage:  LDA PtrA+0 PHS LDA PtrA+1 PHS LDA PtrA+2 PHS  ; push current page address onto stack
                   JPS _Clear CLW _XPos                        ; clear screen and cursor pos
     sh_shownext:  LDA PtrA+2 BNK LDR PtrA                     ; load next char
-                  CPI 0 BEQ _Prompt BMI _Prompt               ; test for EOF or illegal char
-                    CPI '%' BEQ sh_pagebreak                  ; percentage sign indicates custom page-break
+                  CPI 0 BMI sh_userexit                       ; test for EOF or illegal char
+                    BNE sh_not_eof
+                      JPS _WaitInput                          ; EOF => wait on user input
+                      CPI 0xe1 BEQ sh_backpage
+                      CPI 0xe7 BEQ sh_backpage
+        sh_userexit:    JPS _Clear CLW _XPos JPA _Prompt      ; exit show
+      sh_not_eof:   CPI '%' BEQ sh_pagebreak                  ; percentage sign indicates custom page-break
                       CPI 10 BEQ sh_enter
                         PHS JPS _Char PLS                     ; display a regular char
                         INB _XPos CPI 50 BCC sh_advance
       sh_enter:       CLB _XPos INB _YPos CPI 30 BCC sh_advance
 
       sh_pagebreak: INW PtrA JPS OS_FlashA                    ; PAGE-BREAK, advance over last char
-                    JPS _WaitInput CPI 27 BEQ _Prompt         ; wait on user input
+                    JPS _WaitInput CPI 27 BEQ sh_userexit     ; wait on user input
                       CPI 0xe1 BEQ sh_backpage
                       CPI 0xe7 BEQ sh_backpage
                         JPA sh_nextpage
@@ -1401,8 +1393,7 @@ Mnemonics:      'NOP', 'BNK', 'BFF', 'WIN', 'INP', 'INK', 'OUT',
                         STA PtrA+2 PLS STA PtrA+1 PLS STA PtrA+0    ; go back one more page
                         JPA sh_nextpage
 
-      sh_advance: INW PtrA JPS OS_FlashA                      ; goto next char
-                  JPA sh_shownext
+    sh_advance:   INW PtrA JPS OS_FlashA JPA sh_shownext      ; goto next char
 
   sh_notftxt:     '?FILE NOT FOUND.', 10, 0
   sh_errortxt:    'show <textfile>', 10, 0
