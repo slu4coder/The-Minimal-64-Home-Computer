@@ -2,7 +2,7 @@
 ; *****                                                        *****
 ; *****       MinOS 2.0 for the MINIMAL 64 Home Computer       *****
 ; *****                                                        *****
-; ***** written by Carsten Herting - last update Aug 10th 2023 *****
+; ***** written by Carsten Herting - last update: Oct 4th 2023 *****
 ; *****                                                        *****
 ; ******************************************************************
 
@@ -39,8 +39,13 @@ OS_Bootloader:  LDI <OS_Image_Start STA 0xfffc                 ; prepare OS imag
                 LDI <_Start STA 0xfffe                         ; prepare OS target address at 0xfffe/f
                 LDI >_Start STA 0xffff
 
-  imcopyloop:   LDR 0xfffc STR 0xfffe                          ; copy the OS image to RAM
-                INW 0xfffc INW 0xfffe
+                ; LDI <0xc30c STA 0xfffa                       ; debug: show progress of bootloader in VRAM
+                ; LDI >0xc30c STA 0xfffb
+
+  imcopyloop:   LDI 0xff STR 0xfffa
+                LDR 0xfffc STR 0xfffe                          ; copy the OS image to RAM
+                INW 0xfffc INW 0xfffe ; INW 0xfffa             ; debug: show progress of bootloader in VRAM
+                
                 LDA 0xfffe CPI <OS_Image_End BNE imcopyloop    ; destination address beyond OS kernel?
                   LDA 0xffff CPI >OS_Image_End BCC imcopyloop
 
@@ -102,7 +107,7 @@ OS_Start:       LDI 0xfe STA 0xffff                            ; switch off FLAS
                 JPS OS_Print PLS PLS
 
   OS_Prompt:    BFF LDI 0xfe STA 0xffff                        ; re-init stack
-                LDI <readytxt PHS LDI >readytxt PHS  ; display 'READY.'
+                LDI <readytxt PHS LDI >readytxt PHS            ; display 'READY.'
                 JPS OS_Print PLS PLS
 
   newline:      LDI <_ReadBuffer STA _ReadPtr+0                ; parse a line of user input
@@ -126,15 +131,15 @@ OS_Start:       LDI 0xfe STA 0xffff                            ; switch off FLAS
 ; --------------------------------------------------
 ; Generates a pseudo-random byte in A
 ; --------------------------------------------------
-OS_Random:      INB _RandomState+0          ; x++
-                XRA _RandomState+1
-                XRA _RandomState+3
-                STA _RandomState+1          ; a = a^c^x
-                ADB _RandomState+2          ; b = b+a
-                LSR
-                ADA _RandomState+3
-                XRA _RandomState+1
-                STA _RandomState+3          ; c = (c+(b>>1))^a)
+OS_Random:      INB _RandomState+0          ; x++, A=x
+                XRA _RandomState+1          ; A=x^a
+                XRA _RandomState+3          ; A=x^a^c
+                STA _RandomState+1          ; a = a^c^x note that order of XOR does not matter
+                ADB _RandomState+2          ; A/b = b+a
+                LSR                         ; A = b>>1
+                ADA _RandomState+3          ; A = (b>>1)+c
+                XRA _RandomState+1          ; A = (c+(b>>1))^a
+                STA _RandomState+3          ; c = (c+(b>>1))^a
                 RTS                         ; return c in A
 
 ; --------------------------------------------------
@@ -296,9 +301,9 @@ OS_FindFile:      ; browse through all stored files and see if <filename> matche
                     LDR PtrA STA PtrB+0 INW PtrA JPS OS_FlashA     ; extract bytesize -> PtrB
                     LDR PtrA STA PtrB+1 INW PtrA
                     LDA PtrB+0 ADW PtrA LDA PtrB+1 ADB PtrA+1      ; PtrA points beyond this file
-                      LSR LSR LSR LSR ADB PtrA+2 BNK               ; update BANK
-                      LDA PtrA+1 LSL LSL LSL LSL LSL
-                      ROL ROL ROL ROL STA PtrA+1 JPA ff_search     ; use only lower 12 bits
+                      RL5 ANI 15 ADB PtrA+2 BNK                    ; update BANK
+                      LDA PtrA+1 LL5 RL4
+                      STA PtrA+1 JPA ff_search                     ; use only lower 12 bits
   ff_returntrue:    LDA PtrB+0 STA _ReadPtr+0                      ; parse over good filename
                     LDA PtrB+1 STA _ReadPtr+1
                     LDI 1 RTS
@@ -334,11 +339,11 @@ OS_SaveFile:      LDS 3 STA PtrF+1 LDS 4 STA PtrF+0
                     JPS OS_WaitInput CPI 'y' BNE sf_returnbrk      ; used break => no error
 
                     ; invalidate existing filename to 0
-                    LXI 10                                         ; re-read a maximum times
                     LDI 0x05 BNK LDI 0xaa STA 0x0555               ; INIT FLASH WRITE PROGRAM
                     LDI 0x02 BNK LDI 0x55 STA 0x0aaa
                     LDI 0x05 BNK LDI 0xa0 STA 0x0555
                     LDA PtrA+2 BNK LDI 0 STR PtrA                  ; START INVALIDATE WRITE PROCESS
+                    LXI 20                                         ; re-read a maximum times
     sf_delcheck:    DEX BCC sf_returnfalse                         ; write took too long => ERROR!!!
                       LDR PtrA CPI 0 BNE sf_delcheck               ; re-read FLASH location -> data okay?
                         JPA sf_existfile
@@ -357,11 +362,12 @@ OS_SaveFile:      LDS 3 STA PtrF+1 LDS 4 STA PtrF+0
                     LDA PtrC+1 LSR STA PtrC+1                      ; divide bytesize by 2
                     LDA PtrC+0 ROR STA PtrC+0
                     JPA sf_shiftloop
-                  LDA PtrA+2 STA PtrB+1                            ; PtrB now holds FLASH start in nibbles (rounded down)
+
+  sf_shifted:     LDA PtrA+2 STA PtrB+1                            ; PtrB now holds FLASH start in nibbles (rounded down)
                   INW PtrB                                         ; add 1 nibble for rounding up
                   LDI 3 ADW PtrC                                   ; PtrC now holds bytesize in nibbles + 3 (headersize + rouning safety)
 
-  sf_shifted:     LDA PtrC+0 ADW PtrB LDA PtrC+1 ADB PtrB+1
+                  LDA PtrC+0 ADW PtrB LDA PtrC+1 ADB PtrB+1        ; formerly 'sf_shifted' (bug-fix)
                   CPI 0x80 BCS sf_returnfalse                      ; 512KB overflow!
 
                   ; write header start address and bytesize
@@ -402,12 +408,12 @@ OS_SaveFile:      LDS 3 STA PtrF+1 LDS 4 STA PtrF+0
 OS_FLASHWrite:      DEW PtrB BCC fw_return                    ; Anzahl runterzählen
                     LDR PtrA CPI 0xff BNE fw_return           ; teste FLASH, ob dest byte == 0xff ist
                       LDI 0xff BNK LDR PtrC PHS               ; switch OFF FLASH while accessing RAM
-                      LXI 10                                  ; re-read a maximum times
                       LDI 0x05 BNK LDI 0xaa STA 0x0555        ; INIT FLASH WRITE PROGRAM
                       LDI 0x02 BNK LDI 0x55 STA 0x0aaa
                       LDI 0x05 BNK LDI 0xa0 STA 0x0555
                       LDA PtrA+2 BNK                          ; set FLASH bank to write to
                       PLS STR PtrA                            ; INITIATE BYTE WRITE PROCESS
+                      LXI 20                                  ; re-read a maximum times
   fw_writecheck:      DEX BCC fw_return                       ; write took too long => PtrB != 0xffff => ERROR!
                         LDS 0 CPR PtrA BNE fw_writecheck      ; re-read FLASH location until is data okay
                           INW PtrC INW PtrA                   ; DATA OKAY! Increase both pointers to next byte
@@ -1063,8 +1069,8 @@ Mnemonics:      'NOP', 'BNK', 'BFF', 'WIN', 'INP', 'INK', 'OUT',
                 'CLW', 'NOW', 'NEW', 'INW', 'DEW', 'ADW', 'SBW', 'ACW', 'SCW', 'LLW', 'RLW',
                 'JPS', 'RTS', 'PHS', 'PLS', 'LDS', 'STS',
                 'BNE', 'BEQ', 'BCC', 'BCS', 'BPL', 'BMI', 'BGT', 'BLE',
-                'TAX', 'TXA', 'TXY', 'LXI', 'LXA', 'LAX', 'INX', 'DEX', 'ADX', 'SBX', 'CPX', 'ANX', 'ORX', 'XRX',
-                'TAY', 'TYA', 'TYX', 'LYI', 'LYA', 'LAY', 'INY', 'DEY', 'ADY', 'SBY', 'CPY', 'ANY', 'ORY', 'XRY',
+                'TAX', 'TXA', 'TXY', 'LXI', 'LXA', 'LTX', 'INX', 'DEX', 'ADX', 'SBX', 'CPX', 'ANX', 'ORX', 'XRX',
+                'TAY', 'TYA', 'TYX', 'LYI', 'LYA', 'LTA', 'INY', 'DEY', 'ADY', 'SBY', 'CPY', 'ANY', 'ORY', 'XRY',
                 'HLT'
 
 ; **********************************************************************************************************
@@ -1305,7 +1311,7 @@ Mnemonics:      'NOP', 'BNK', 'BFF', 'WIN', 'INP', 'INK', 'OUT',
   ; --------------------------------------------------
   ClearStart:     JPS _Clear
                   CLB _XPos CLB _YPos
-                  JPS _Prompt
+                  JPA _Prompt
 
   ClearEnd:
 
@@ -1328,11 +1334,11 @@ Mnemonics:      'NOP', 'BNK', 'BFF', 'WIN', 'INP', 'INK', 'OUT',
                     JPS _FindFile CPI 1 BNE de_notferror
                     LDA PtrA+2 CPI 3 BCC de_canterror
                     ; file exists and may be deleted, invalidate it's name to 0
-                    LXI 10                                ; re-read a maximum times
                     LDI 0x05 BNK LDI 0xaa STA 0x0555      ; INIT FLASH WRITE PROGRAM
                     LDI 0x02 BNK LDI 0x55 STA 0x0aaa
                     LDI 0x05 BNK LDI 0xa0 STA 0x0555
                     LDA PtrA+2 BNK LDI 0 STR PtrA         ; START WRITE PROCESS
+                    LXI 20                                ; re-read a maximum times
     de_delcheck:    DEX BCC de_flasherror                 ; write took too long => ERROR!!!
                       LDR PtrA CPI 0 BNE de_delcheck      ; re-read FLASH location -> data okay?
                         JPA _Prompt                       ; FLASH off und zurück
@@ -1357,38 +1363,49 @@ Mnemonics:      'NOP', 'BNK', 'BFF', 'WIN', 'INP', 'INK', 'OUT',
   #emit
 
   ; --------------------------------------------------
-  ; Displays a text file by § paragraph
+  ; Displays a text file by paragraph marked as '%'
   ; usage: "show <filename> <ENTER>"
   ; modifies:
   ; --------------------------------------------------
   ShowStart:      JPS _ReadSpace
                   LDR _ReadPtr CPI 39 BGT sh_syntaxok         ; look for a valid filename
-                    LDI <sh_errortxt PHS LDI >sh_errortxt PHS ; show syntax
+    sh_error:       LDI <sh_errortxt PHS LDI >sh_errortxt PHS ; show syntax
                     JPS _Print JPA _Prompt
     sh_syntaxok:  JPS _FindFile CPI 1 BEQ sh_found            ; A=1: success
                     LDI <sh_notftxt PHS LDI >sh_notftxt PHS
                     JPS _Print JPA _Prompt                    ; resets stack and switches off FLASH
-    sh_found:     LDI 24 ADW PtrA                             ; A0-2/BANK now hold the start of the file - 1
-    sh_firstpage: LDI 0xff PHS                                ; push end marker
-    sh_nextpage:  LDA PtrA+0 PHS LDA PtrA+1 PHS LDA PtrA+2 PHS  ; push previous page
-                  JPS _Clear CLW _XPos                        ; clear screen and X/Y pos
-    sh_nextchar:  INW PtrA JPS OS_FlashA                      ; goto next char
-    sh_shownext:  LDA PtrA+2 BNK LDR PtrA                     ; load next char from FLASH
-                  CPI 0 BMI _Prompt BEQ _Prompt               ; end reached?
-                    CPI '%' BNE sh_printchar
-                      JPS _WaitInput CPI 27 BEQ _Prompt       ; stop at % char
-                        CPI 0xe1 BEQ sh_backpage
-                        CPI 0xe7 BEQ sh_backpage
-                        CPI 0x08 BNE sh_nextpage
-      sh_backpage:        PLS CPI 0xff BEQ sh_firstpage
-                            STA PtrA+2 PLS STA PtrA+1 PLS STA PtrA+0
-                          PLS CPI 0xff BEQ sh_firstpage
-                            STA PtrA+2 PLS STA PtrA+1 PLS STA PtrA+0
-                          JPA sh_nextpage
-    sh_printchar:   PHS JPS _PrintChar PLS JPA sh_nextchar
+    sh_found:     LDI 20 ADW PtrA JPS OS_FlashA               ; check for target = 0x1000 (text file format)
+                  LDR PtrA CPI <0x1000 BNE sh_error
+                    INW PtrA JPS OS_FlashA
+                    LDR PtrA CPI >0x1000 BNE sh_error
+                      LDI 3 ADW PtrA JPS OS_FlashA            ; advance to start of text data
+
+    sh_firstpage: LDI 0xff PHS                                ; push end marker onto stack
+    sh_nextpage:  LDA PtrA+0 PHS LDA PtrA+1 PHS LDA PtrA+2 PHS  ; push current page address onto stack
+                  JPS _Clear CLW _XPos                        ; clear screen and cursor pos
+    sh_shownext:  LDA PtrA+2 BNK LDR PtrA                     ; load next char
+                  CPI 0 BEQ _Prompt BMI _Prompt               ; test for EOF or illegal char
+                    CPI '%' BEQ sh_pagebreak                  ; percentage sign indicates custom page-break
+                      CPI 10 BEQ sh_enter
+                        PHS JPS _Char PLS                     ; display a regular char
+                        INB _XPos CPI 50 BCC sh_advance
+      sh_enter:       CLB _XPos INB _YPos CPI 30 BCC sh_advance
+
+      sh_pagebreak: INW PtrA JPS OS_FlashA                    ; PAGE-BREAK, advance over last char
+                    JPS _WaitInput CPI 27 BEQ _Prompt         ; wait on user input
+                      CPI 0xe1 BEQ sh_backpage
+                      CPI 0xe7 BEQ sh_backpage
+                        JPA sh_nextpage
+        sh_backpage:  PLS STA PtrA+2 PLS STA PtrA+1 PLS STA PtrA+0  ; go back to top of current page
+                      PLS CPI 0xff BEQ sh_firstpage                 ; start of document was reached
+                        STA PtrA+2 PLS STA PtrA+1 PLS STA PtrA+0    ; go back one more page
+                        JPA sh_nextpage
+
+      sh_advance: INW PtrA JPS OS_FlashA                      ; goto next char
+                  JPA sh_shownext
 
   sh_notftxt:     '?FILE NOT FOUND.', 10, 0
-  sh_errortxt:    'show <name>', 10, 0
+  sh_errortxt:    'show <textfile>', 10, 0
 
   ShowEnd:
 
