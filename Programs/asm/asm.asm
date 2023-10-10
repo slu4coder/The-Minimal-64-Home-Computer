@@ -3,6 +3,9 @@
 ;       written by Carsten Herting 02.10.2022 - 06.10.2022
 ; ---------------------------------------------------------------
 
+; CHANGE LOG
+; 10.10.2023: Upgraded to 'Minimal 64x2' version of the assembler (keeping fast-jump support which is not used)
+
 ; LICENSING INFORMATION
 ; This is free software: you can redistribute it and/or modify it under the terms of the
 ; GNU General Public License as published by the Free Software Foundation, either
@@ -34,14 +37,15 @@ Init:         LDI 0xfe STA 0xffff                           ; init stack
                   JPS _Print PLS PLS
                   JPA _Prompt
 
-IntroText:    'MINIMAL 64 Assembler', 10, 0
-FileMsg:      '?FILE NOT FOUND.', 10, 0
-LineMsg:      'ERROR in line ', 0
+IntroText:    'Minimal 64 Assembler', 10, 0
+FileMsg:      'File not found.', 10, 0
+LineMsg:      'Error in line ', 0
+FastMsg:      'Invalid jump in line ', 0
 
 ; --------------------------------------------------------- ;
 
 ; evaluate byte size of all elements, extract label definitions and calculate their addresses
-PassOne:      JPS init_ep_pc CLB labels                     ; write a EOF zero to "empty" label table
+PassOne:      JPS init_cntrs CLB labels                     ; write a EOF zero to "empty" label table
   OneFind:    JPS findelem CPI 0 BEQ PassTwo                ; find next element starting at ep
                 LDA ep+0 STA ptr+0 LDA ep+1 STA ptr+1       ; ptr = ep
                 JPS elength                                 ; get element length 'elen'
@@ -95,30 +99,36 @@ PassOne:      JPS init_ep_pc CLB labels                     ; write a EOF zero t
 ; --------------------------------------------------------- ;
 
 ; emit code directly into memory, substituting address values for label references
-PassTwo:      JPS init_ep_pc LDI 1 STA isemit               ; toggle switch for code emission
-  TwoFind:    JPS findelem CPI 0 BEQ PassDone               ; find next element starting at ep
-                JPS elength
-                LDA ep+0 STA enext+0 LDA ep+1 STA enext+1   ; compute (ep + elen) for next elements position
+PassTwo:      JPS init_cntrs                                ; reset ep, pc, mc
+              LDI 1 STA isemit                              ; switch ON code emission by default
+  TwoFindNext:  JPS findelem CPI 0 BEQ PassDone             ; goto next element starting at ep?
+                JPS elength                                 ; get element length
+                LDA ep+0 STA enext+0 LDA ep+1 STA enext+1   ; compute (ep + elen) = position beyond this element
                 LDA elen ADW enext
-              LDR ep CPI '#' BEQ TwoPreproc                 ; test for preprocessor command
-                LDA isemit CPI 0 BEQ TwoExit                ; skip element, if emission is switched off
-                  LDA ep+0 STA ptr+0 LDA ep+1 STA ptr+1     ; ep -> ptr for look-ahead
-                  LDA elen DEC ADW ptr                      ; look at last char of current element
-                  LDR ptr CPI ':' BEQ TwoExit               ; ignore label definitions here
+              LDR ep CPI '#' BEQ TwoPreproc                 ; handle PREPROCESSOR commands
+                LDA ep+0 STA ptr+0 LDA ep+1 STA ptr+1       ; ep -> ptr for look-ahead
+                LDA elen DEC ADW ptr                        ; look at last char of current element
+                LDR ptr CPI ':' BEQ TwoExit                 ; ignore label definitions (they don't emit anything)
                   LDR ep CPI 39 BEQ TwoString               ; test for ' string
-                    LDA elen CPI 3 BNE tf_expr              ; test for mnemonics
-                      JPS OpCode CPI 0x80 BCS tf_expr
-                        STR pc INW pc JPA TwoExit           ; it's a mnemonic! => emit opcode
+                    LDA elen CPI 3 BNE TwoExpress           ; anything with length != 3 => EXPRESSION
+                      JPS OpCode CPI 0x80 BCS TwoExpress    ; anything != OpCode => EXPRESSION
 ; --------------------------------------------------------- ;
-  tf_expr:      CLB lsbmsb LDI 1 STA sign                   ; ***** EXPRESSION PARSING IN "+/-TERMS" *****
+  TwoMnemonic:          TAX INW pc                          ; MNEMONIC => save the opcode temporarily
+                        LDA isemit CPI 0 BEQ tm_noemit
+                          TXA STR mc INW mc               ; isemit = 1 => emit opcode
+    tm_noemit:            LDR ep CPI 'F' BNE TwoExit        ; test for "fast jump" instruction "F.."
+                            LDI 1 STA isfastjump            ; enable "fastjump" check for next element
+                            JPA TwoExitF                    ; same as JPA TwoExit but w/o clearing "isfastjump"
+; --------------------------------------------------------- ;
+  TwoExpress:   CLB lsbmsb LDI 1 STA sign                   ; ***** EXPRESSION PARSING IN "+/-TERMS" *****
                 CLW expr CLW term
 
-                LDR ep CPI '<' BEQ ex_lsbmsb                ; read LSB and MSB operators
+                LDR ep CPI '<' BEQ ex_lsbmsbop              ; read LSB and MSB operators
                   CPI '>' BNE ex_while                      ; enter part loop
-  ex_lsbmsb:        STA lsbmsb INW ep                       ; consume an LSB/MSB operator
+  ex_lsbmsbop:      STA lsbmsb INW ep                       ; consume an LSB/MSB operator
 
   ex_while:     LDA ep+1 CPA enext+1 BCC ex_dosign          ; while (x < ep + elen) ...
-                  LDA ep+0 CPA enext+0 BCS ex_emitexpr      ; end of expression reached? => end while and emit expr!
+                  LDA ep+0 CPA enext+0 BCS TwoEmitExpr      ; end of expression reached? => end while and emit expr!
 
     ex_dosign:      LDR ep CPI '+' BNE ex_noplus            ; check for a +/- sign of that part
                       LDI 1 JPA ex_storesign
@@ -145,8 +155,8 @@ PassTwo:      JPS init_ep_pc LDI 1 STA isemit               ; toggle switch for 
                       JPA ex_addterm
 
     ex_dostar:      CPI '*' BNE ex_dodecimal                ; check for * location symbol
-                      LDA pc+0 STA term+0                   ; term = pc; x++;
-                      LDA pc+1 STA term+1
+                      LDA mc+0 STA term+0                   ; term = mc (emission counter); x++;
+                      LDA mc+1 STA term+1
                       INW ep                                ; consume *
                       LDA lsbmsb CPI 0 BNE ex_addterm       ; if (lsbmsb == 0) lsbmsb = 'w';
                         LDI 'w' STA lsbmsb JPA ex_addterm
@@ -168,7 +178,7 @@ PassTwo:      JPS init_ep_pc LDI 1 STA isemit               ; toggle switch for 
       ex_cutref:    JPS findreflength                       ; ep = label start, returns X = label byte length
                     JPS findlabel                           ; length X and ep remain unchanged!
                     CPI 1 BNE Error                         ; ERROR: Unknown label reference.
-                      TXA ADW ep                            ; advance over label
+                      TXA ADW ep                          ; advance over label
                       LDR lptr STA term+0 DEW lptr          ; take label value from table
                       LDR lptr STA term+1
                       JPA ex_addterm
@@ -178,35 +188,49 @@ PassTwo:      JPS init_ep_pc LDI 1 STA isemit               ; toggle switch for 
     ex_possign: LDA term+1 ADB expr+1 LDA term+0 ADW expr
                 JPA ex_while
 
-  ex_emitexpr:  LDA lsbmsb CPI 'w' BNE ex_trymsb            ; EMISSION OF EXPRESSION: case LSB MSB (little endian)
-                  LDA expr+0 STR pc INW pc
-    ex_msbonly:   LDA expr+1 STR pc INW pc
-                  JPA TwoExit
-    ex_trymsb:  CPI '>' BEQ ex_msbonly                      ; case MSB only
-                  LDA expr+0 STR pc INW pc                  ; case LSB only
-                  JPA TwoExit
+; --------------------------------------------------------- ;
+  TwoEmitExpr:  LDA lsbmsb CPI 'w' BNE ex_trymsb            ; EMISSION OF EXPRESSION: case LSB MSB (little endian)
+                  LDA isfastjump CPI 0 BEQ ex_lsbmsb        ; "w": check for "fast jump" flag
+                    LDA expr+1 CPA pc+1 BEQ ex_emitlsb      ; assert matching MSBs for a fast branch
+                      LDI <FastMsg PHS LDI >FastMsg PHS     ; ERROR: Fast branch is out of reach!
+                      JPS _Print PLS JPS linenr PLS
+                      LDI 10 PHS JPS _PrintChar PLS
+                      JPA _Prompt
+    ex_lsbmsb:    INW pc LDA isemit CPI 0 BEQ ex_emitmsb    ; case LSB MSB
+                    LDA expr+0 STR mc INW mc
+    ex_emitmsb:   INW pc LDA isemit CPI 0 BEQ TwoExit
+                    LDA expr+1 STR mc INW mc JPA TwoExit
+    ex_trymsb:  CPI '>' BEQ ex_emitmsb                      ; case MSB only
+    ex_emitlsb:   INW pc LDA isemit CPI 0 BEQ TwoExit       ; case LSB only
+                    LDA expr+0 STR mc INW mc JPA TwoExit    ; isemit = 1
+                    
 ; --------------------------------------------------------- ;
   TwoString:  INW ep LDA elen SBI 2 TAX                     ; move over ' and let X = elen - 2 (omit '')
-    ts_loop:  DEX BCC TwoExit                               ; emit the characters to *pc++
-                LDR ep STR pc INW ep INW pc JPA ts_loop
+    ts_loop:  DEX BCC TwoExit                             ; emit the characters to *mc++
+                LDA isemit CPI 0 BEQ ts_noemit              ; isemit = 0 => pc++, mc unchanged
+                  LDR ep STR mc INW mc                      ; emit something!
+    ts_noemit:  INW ep INW pc JPA ts_loop
 ; --------------------------------------------------------- ;
-  TwoPreproc: LDA ep+0 STA ptr+0 LDA ep+1 STA ptr+1         ; ptr = ep
-              LDA elen CPI 4 BNE TwoFive
-                INW ptr LDR ptr CPI 'o' BNE TwoExit
+  TwoPreproc: LDA ep+0 STA ptr+0 LDA ep+1 STA ptr+1         ; ep -> working ptr
+              LDA elen CPI 4 BNE TwoFive                    ; "#mute" or "#emit"?
+                INW ptr LDR ptr CPI 'o' BNE TwoExit         ; no => assert "#org"
                 INW ptr LDR ptr CPI 'r' BNE TwoExit
                 INW ptr LDR ptr CPI 'g' BNE TwoExit
-                  LDA elen ADW ep                           ; move over #org manually, bo way back to TwoExit!!!
-                  JPS findelem JPS elength
-                  LDA isemit CPI 0 BEQ TwoPreExit
-                    LDA ep+0 STA ptr+0 LDA ep+1 STA ptr+1
-                    LDR ptr CPI '0' BNE Error INW ptr
-                    LDR ptr CPI 'x' BNE Error INW ptr
-                      LDA ptr+0 STA _ReadPtr+0 LDA ptr+1 STA _ReadPtr+1
-                      JPS _ReadHex
-                      LDA _ReadNum+2 CPI 0xf0 BEQ Error
-                        LDA _ReadNum+0 STA pc+0             ; accept new PC
-                        LDA _ReadNum+1 STA pc+1
-    TwoPreExit:         LDA elen ADW ep JPA TwoFind         ; move over '0x0000' manually
+                  LDA elen ADW ep                           ; move over #org manually, no way back to TwoExit!!!
+                  JPS findelem JPS elength                  ; parse 0x0000 after #org
+                  LDA ep+0 STA ptr+0 LDA ep+1 STA ptr+1     ; ep -> working ptr
+                  LDR ptr CPI '0' BNE Error INW ptr         ; assert a hex address
+                  LDR ptr CPI 'x' BNE Error INW ptr
+                    LDA ptr+0 STA _ReadPtr+0                ; prepare HEX parsing
+                    LDA ptr+1 STA _ReadPtr+1
+                    JPS _ReadHex                            ; parse!
+                    LDA _ReadNum+2 CPI 0xf0 BEQ Error       ; valid hex number?
+                      LDA _ReadNum+0 STA pc+0               ; always accept as new PC
+                      LDA _ReadNum+1 STA pc+1
+                      LDA isemit CPI 0 BEQ TwoPreExit       ; isemit = 1?
+                        LDA _ReadNum+0 STA mc+0             ; then accept as new emission counter, too!
+                        LDA _ReadNum+1 STA mc+1
+      TwoPreExit:     LDA elen ADW ep JPA TwoFindNext       ; move over '0x0000' manually and look for next element
     TwoFive:  CPI 5 BNE TwoExit
                 INW ptr LDR ptr CPI 'm' BEQ TwoMute
                 CPI 'e' BNE TwoExit
@@ -219,27 +243,27 @@ PassTwo:      JPS init_ep_pc LDI 1 STA isemit               ; toggle switch for 
               INW ptr LDR ptr CPI 'e' BNE TwoExit
                 CLB isemit JPA TwoExit                      ; mute
 ; --------------------------------------------------------- ;
-  TwoExit:    LDA enext+0 STA ep+0 LDA enext+1 STA ep+1     ; jump over element and look for more elements
-              JPA TwoFind
+  TwoExit:    CLB isfastjump                                ; clear "fastjump" support for next element
+    TwoExitF: LDA enext+0 STA ep+0 LDA enext+1 STA ep+1     ; jump over element and look for more elements
+              JPA TwoFindNext
 ; --------------------------------------------------------- ;
 
 PassDone:     LDI <DoneText PHS LDI >DoneText PHS           ; print out last used address
               JPS _Print PLS PLS                            ; to facilitate saving
-              DEW pc
-              LDA pc+1 PHS JPS _PrintHex PLS
-              LDA pc+0 PHS JPS _PrintHex PLS
-              LDI '.' PHS JPS _PrintChar PLS
+              DEW mc
+              LDA mc+1 PHS JPS _PrintHex PLS
+              LDA mc+0 PHS JPS _PrintHex PLS
               LDI 10 PHS JPS _PrintChar PLS
-              LDI 0xfe STA 0xffff                           ; clean up stack
-              JPA _Prompt
+              JPA _Prompt                                   ; also cleans up stack
 
-DoneText:     'Last byte written to 0x', 0
+DoneText:     'Last byte at 0x', 0
 
 ; --------------------------------------------------------- ;
 
 ; initializes element pointer and program counter
-init_ep_pc:   LDI <source STA ep+0 LDI >source STA ep+1     ; goto start of source code
-              LDI <default STA pc+0 LDI >default STA pc+1   ; set default target program counter
+init_cntrs:   LDI <source STA ep+0 LDI >source STA ep+1     ; set ep to start of source code
+              LDI <default STA pc+0 STA mc+0                ; set pc & mc to default target address
+              LDI >default STA pc+1 STA mc+1
               RTS
 
 ; prints out an error message containing the line number and the erroneous element
@@ -307,7 +331,7 @@ linenr:         LDI 1 STA ln_num+0 CLB ln_num+1             ; set line number to
 findreflength:  LDA ep+0 STA frl_test+1
                 LDA ep+1 STA frl_test+2
                 LXI 0
-    frl_test:   LAX 0xffff
+    frl_test:   LTX 0xffff
                 CPI 32 BLE frl_exit
                   CPI '+' BEQ frl_exit
                     CPI '-' BEQ frl_exit
@@ -358,7 +382,7 @@ findlabel:      TXA STA fl_len                              ; computer max index
                 LDI <labels STA lptr+0 LDI >labels STA lptr+1
                 LDA ep+0 STA fl_nextc+1 LDA ep+1 STA fl_nextc+2
   fl_nextl:     LXI 0                                         ; goto start of label at ep
-  fl_nextc:     LAX 0xffff CPR lptr BNE fl_noteq
+  fl_nextc:     LTX 0xffff CPR lptr BNE fl_noteq
                   DEW lptr INX CPA fl_len BCC fl_nextc
                     LDR lptr CPI ':' BEQ fl_found             ; does the stored label end, too?
   fl_searchend:   DEW lptr                                    ; didn't end => move over nonzero char and search end
@@ -377,7 +401,7 @@ findlabel:      TXA STA fl_len                              ; computer max index
 ; first call findlabel to check whether the label existis and to find free slot.
 putlabel:       LDA ep+0 STA pl_loop+1 LDA ep+1 STA pl_loop+2
                 LXI 0
-  pl_loop:      LAX 0xffff STR lptr
+  pl_loop:      LTX 0xffff STR lptr
                 DEW lptr                                    ; store label including :
                 INX CPA elen BCC pl_loop
                 LDA pc+0 STR lptr DEW lptr
@@ -388,8 +412,10 @@ putlabel:       LDA ep+0 STA pl_loop+1 LDA ep+1 STA pl_loop+2
 #mute                         ; variables used by the assembler
 
 isemit:         0xff          ; toggle switch for code emission
-pc:             0xffff        ; program counter
-ep:             0xffff        ; element pointer
+isfastjump:     0xff          ; toggle switch for fastjump support (Minimal Ultra)
+pc:             0xffff        ; program counter (used in pass 1 and 2)
+mc:             0xffff        ; emission counter (used in pass 2)
+ep:             0xffff        ; element pointer (used in pass 1 and 2)
 elen:           0xffff        ; length of an element (LSB only, MSB used for calculation)
 enext:          0xffff        ; = ep + elen
 term:           0xffff        ; holds term value
