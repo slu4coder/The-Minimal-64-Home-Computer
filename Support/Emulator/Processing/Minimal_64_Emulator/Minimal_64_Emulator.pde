@@ -35,10 +35,14 @@ int flashState=0; // determines the state of a write operation to FLASH (see SSF
 
 final int[] clocksPerInstruction = // clock cycles used per instruction
 { 
-  16, 4, 4, 6, 5, 5, 4, 6, 6, 5, 5, 5, 5, 5, 6, 7, 8, 9, 10, 11, 13, 5, 6, 7, 8, 9, 10, 11, 12, 5, 5, 5,
-  5, 5, 5, 5, 5, 12, 5, 7, 7, 8, 8, 8, 8, 8, 8, 8, 15, 8, 10, 10, 11, 11, 11, 11, 11, 11, 11, 8, 9, 9, 9, 9,
-  8, 9, 8, 9, 8, 8, 8, 16, 8, 15, 9, 11, 11, 11, 12, 11, 12, 11, 12, 10, 10, 14, 12, 11, 7, 8, 15, 5, 5, 5, 5, 5,  
-  5, 5, 5, 6, 6, 7, 7, 10, 13, 7, 7, 7, 7, 7, 7, 7, 13, 7, 7, 10, 8, 11, 14, 8, 8, 8, 8, 8, 8, 8, 14, 6
+  16,  4,  4,  6,  5,  5,  4,  6,  6,  5,  5,  5,  5,  5,  6,  7,
+   8,  9, 10, 11, 12,  5,  6,  7,  8,  9, 10, 11, 12,  5,  5,  5,
+   5,  5,  5,  5,  5, 12,  5,  7,  7,  8,  8,  8,  8,  8,  8,  8,
+  15,  8, 10, 10, 11, 11, 11, 11, 11, 11, 11,  8,  9,  9,  9,  9,
+   8,  9,  8,  9,  8,  8,  8, 15,  8, 15,  9, 11, 11, 11, 12, 11,
+  12, 11, 12, 10, 10, 14, 12, 11,  7,  8, 15,  5,  5,  5,  5,  5,
+   5,  5,  5,  6,  6,  7,  7, 10, 12,  7,  7,  7,  7,  7,  7,  7,
+  13,  7,  7, 10,  8, 11,  7,  8,  8,  8,  8,  8,  8,  8, 14,  6
 };
 
 final int FLAG_Z = 1; // ALU zero flag
@@ -734,7 +738,7 @@ int DoInstruction() // handle all instructions
       WriteMem(ReadMem(adr), 0xff00);
       break;
     }
-    case 104: mA = ReadMem(TakeAddr() + ReadMem(0xff00)); break; // LAX
+    case 104: mA = ReadMem(TakeAddr() + ReadMem(0xff00)); break; // LTX
     case 105: // INX
     {
       int a = ReadMem(0xff00) + 1;
@@ -784,7 +788,7 @@ int DoInstruction() // handle all instructions
       WriteMem(ReadMem(adr), 0xff01);
       break;
     }
-    case 118: mA = ReadMem(TakeAddr() + ReadMem(0xff01)); break; // LAY
+    case 118: mA = ReadMem(TakeAddr() + mA); break; // LTA
     case 119: // INY
     {
       int a = ReadMem(0xff01) + 1;
