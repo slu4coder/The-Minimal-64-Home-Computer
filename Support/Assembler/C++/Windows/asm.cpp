@@ -42,7 +42,7 @@ const std::vector<std::string> MNEMONICS		// Index = OpCode
 {
 	"NOP", "BNK", "BFF", "WIN", "INP", "INK", "OUT", "NOT", "NEG", "INC", "DEC", "CLC", "SEC",
 	"LSL", "LL2", "LL3", "LL4", "LL5", "LL6", "LL7", "LSR", "ROL", "RL2", "RL3", "RL4", "RL5", "RL6", "RL7", "ROR",
-  "LDI", "ADI", "SBI", "ACI", "SCI", "CPI", "ANI", "ORI", "XRI",
+        "LDI", "ADI", "SBI", "ACI", "SCI", "CPI", "ANI", "ORI", "XRI",
 	"JPA", "LDA", "STA", "ADA", "SBA", "ACA", "SCA", "CPA", "ANA", "ORA", "XRA",
 	"JPR", "LDR", "STR", "ADR", "SBR", "ACR", "SCR", "CPR", "ANR", "ORR",
 	"CLB", "NOB", "NEB", "INB", "DEB", "ADB", "SBB", "ACB", "SCB", "ANB", "ORB", "LLB", "LRB", "RLB", "RRB",
