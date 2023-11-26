@@ -1,6 +1,6 @@
 # The 'Minimal 64 Home Computer'
 
-See "CHANGE LOG" for a brief summary of relevant post-release updates.
+See "CHANGE LOG" for a brief summary of the relevant updates.
 
 ![IMG_1506_2](https://github.com/slu4coder/The-Minimal-64-Home-Computer/assets/52576999/b598f07d-306d-4c5c-b5dd-82162dc874fa)
 
