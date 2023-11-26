@@ -39,12 +39,8 @@ OS_Bootloader:  LDI <OS_Image_Start STA 0xfffc                 ; prepare OS imag
                 LDI <_Start STA 0xfffe                         ; prepare OS target address at 0xfffe/f
                 LDI >_Start STA 0xffff
 
-                ; LDI <0xc30c STA 0xfffa                       ; debug: show progress of bootloader in VRAM
-                ; LDI >0xc30c STA 0xfffb
-
-  imcopyloop:   LDI 0xff STR 0xfffa
-                LDR 0xfffc STR 0xfffe                          ; copy the OS image to RAM
-                INW 0xfffc INW 0xfffe ; INW 0xfffa             ; debug: show progress of bootloader in VRAM
+  imcopyloop:   LDR 0xfffc STR 0xfffe                          ; copy the OS image to RAM
+                INW 0xfffc INW 0xfffe
                 
                 LDA 0xfffe CPI <OS_Image_End BNE imcopyloop    ; destination address beyond OS kernel?
                   LDA 0xffff CPI >OS_Image_End BCC imcopyloop
@@ -121,9 +117,9 @@ OS_Start:       LDI 0xfe STA 0xffff                            ; switch off FLAS
   OS_Error:     LDI <errortxt PHS LDI >errortxt PHS JPS OS_Print
                 JPA OS_Prompt
 
-  uarttxt:      27, '[H', 27, '[J', 27, '[?25hREADY.', 10, 0   ; HOME, CLR, SHOW CURSOR
+  uarttxt:      27, '[H', 27, '[J', 27, '[?25h'                ; HOME, CLR, SHOW CURSOR + "READY." below
   readytxt:     'READY.', 10, 0
-  errortxt:     '?FILE NOT FOUND.', 10, 0
+  errortxt:     'NOT FOUND.', 10, 0
   logotxt1:     '*****  M I N I M A L  6 4  *****', 10, 10, 0
   logotxt2:     '64KB RAM - 512KB SSD - MinOS 2.0', 10, 10, 0
   logotxt3:     'Type ', 39, 'show manual', 39, ' for more info', 10, 10, 0
@@ -395,7 +391,7 @@ OS_SaveFile:      LDS 3 STA PtrF+1 LDS 4 STA PtrF+0
   sf_returnfalse: BFF LDI 0 STS 6 RTS                              ; return failure, FLASH off
   sf_returnbrk:   BFF LDI 2 STS 6 RTS                              ; signal user abortion
 
-  sf_asktext:     'OVERWRITE (y/n)?', 10, 0
+  sf_asktext:     'OVERWRITE (y/n)', 10, 0
 
 ; --------------------------------------------------
 ; Writes data to FLASH at PtrA0..2 and BNK, PtrC: RAM source, PtrB: bytesize
@@ -893,25 +889,25 @@ OS_Image_End:                                                  ; address of firs
 
 #mute
                 ; GLOBAL OS LABELS AND CONSTANTS
-#org 0xbf70     _ReadPtr:                    ; Zeiger (2 bytes) auf das letzte eingelesene Zeichen (to be reset at startup)
-#org 0xbf72     _ReadNum:                    ; 3-byte storage for parsed 16-bit number, MSB: 0xf0=invalid, 0x00=valid
-#org 0xbf75     PtrA:                        ; lokaler pointer (3 bytes) used for FLASH addr and bank
-#org 0xbf78     PtrB:                        ; lokaler pointer (3 bytes)
-#org 0xbf7b     PtrC:                        ; lokaler pointer (3 bytes)
-#org 0xbf7e     PtrD:                        ; lokaler pointer (2 bytes)
-#org 0xbf80     PtrE:                        ; lokaler pointer (2 bytes)
-#org 0xbf82     PtrF:                        ; lokaler pointer (2 bytes)
-#org 0xbf84     _RandomState:                ; 4-byte storage (x, a, b, c) state of the pseudo-random generator
-#org 0xbf88     ; unused
-#org 0xbf89     ; unused
-#org 0xbf8a     ; unused
-#org 0xbf8b     ; unused
-#org 0xbf8c     _XPos:                       ; current VGA cursor col position (x: 0..49)
-#org 0xbf8d     _YPos:                       ; current VGA cursor row position (y: 0..29)
-#org 0xbf8e     _ReadBuffer:                 ; 50 bytes of OS read buffer (input line)
-#org 0xbfbf     ReadLast:                    ; last byte of read buffer
+#org 0xbcb0     _ReadPtr:                    ; Zeiger (2 bytes) auf das letzte eingelesene Zeichen (to be reset at startup)
+#org 0xbcb2     _ReadNum:                    ; 3-byte storage for parsed 16-bit number, MSB: 0xf0=invalid, 0x00=valid
+#org 0xbcb5     PtrA:                        ; lokaler pointer (3 bytes) used for FLASH addr and bank
+#org 0xbcb8     PtrB:                        ; lokaler pointer (3 bytes)
+#org 0xbcbb     PtrC:                        ; lokaler pointer (3 bytes)
+#org 0xbcbe     PtrD:                        ; lokaler pointer (2 bytes)
+#org 0xbcc0     PtrE:                        ; lokaler pointer (2 bytes)
+#org 0xbcc2     PtrF:                        ; lokaler pointer (2 bytes)
+#org 0xbcc4     _RandomState:                ; 4-byte storage (x, a, b, c) state of the pseudo-random generator
+#org 0xbcc8     ; unused
+#org 0xbcc9     ; unused
+#org 0xbcca     ; unused
+#org 0xbccb     ; unused
+#org 0xbccc     _XPos:                       ; current VGA cursor col position (x: 0..49)
+#org 0xbccd     _YPos:                       ; current VGA cursor row position (y: 0..29)
+#org 0xbcce     _ReadBuffer:                 ; 50 bytes of OS read buffer (input line)
+#org 0xbcff     ReadLast:                    ; last byte of read buffer
 
-                                             ; 0xbfc0 - 0xbfff reserved for expansion cards
+                                             ; 0xbf00 - 0xbfff reserved for expansion cards
 
 #org 0xc30c     ViewPort:                    ; start index of viewport area 0xc000 + 12*64 + 12
 
@@ -1080,8 +1076,8 @@ Mnemonics:      'NOP', 'BNK', 'BFF', 'WIN', 'INP', 'INK', 'OUT',
 'save', 0, '              ', 0, SaveStart, SaveEnd-SaveStart    ; file header
 
   #mute
-  #org 0xbf00                                                   ; target address at the end of OS kernel RAM
-  #emit                                                         ; this allows to save code with target 0xbd00
+  #org 0xbd00                                                   ; target address of the code
+  #emit
 
   ; --------------------------------------------------
   ; usage: "save <first_hex_addr> <last_hex_addr> <filename> <ENTER>"
@@ -1101,7 +1097,7 @@ Mnemonics:      'NOP', 'BNK', 'BFF', 'WIN', 'INP', 'INK', 'OUT',
     sv_print:       JPS _Print JPA _Prompt                      ; stack cleanup intentionally left out
 
     sv_syntaxtxt: 'save <fst> <lst> <name>', 10, 0
-    sv_errortxt:  '?ERROR.', 10, 0
+    sv_errortxt:  'ERROR.', 10, 0
 
   SaveEnd:
 
@@ -1335,9 +1331,9 @@ Mnemonics:      'NOP', 'BNK', 'BFF', 'WIN', 'INP', 'INK', 'OUT',
   de_notferror:   LDI <de_notftxt PHS LDI >de_notftxt PHS JPS _Print JPA _Prompt
 
   de_errortxt:    'del <name>', 10, 0
-  de_flashtxt:    '?WRITE ERROR.', 10, 0
-  de_canttxt:     '?FILE PROTECTED.', 10, 0
-  de_notftxt:     '?FILE NOT FOUND.', 10, 0
+  de_flashtxt:    'WRITE ERROR.', 10, 0
+  de_canttxt:     'PROTECTED.', 10, 0
+  de_notftxt:     'NOT FOUND.', 10, 0
 
   DelEnd:
 
@@ -1395,8 +1391,8 @@ Mnemonics:      'NOP', 'BNK', 'BFF', 'WIN', 'INP', 'INK', 'OUT',
 
     sh_advance:   INW PtrA JPS OS_FlashA JPA sh_shownext      ; goto next char
 
-  sh_notftxt:     '?FILE NOT FOUND.', 10, 0
-  sh_errortxt:    'show <textfile>', 10, 0
+  sh_notftxt:     'NOT FOUND.', 10, 0
+  sh_errortxt:    'show <text>', 10, 0
 
   ShowEnd:
 
@@ -1617,7 +1613,7 @@ Mnemonics:      'NOP', 'BNK', 'BFF', 'WIN', 'INP', 'INK', 'OUT',
                     INC BPL format_loop
                   JPA _Prompt
 
-    fm_asktext:   'Are you sure? (y/n)', 10, 0
+    fm_asktext:   'Sure? (y/n)', 10, 0
     fm_formtext:  'Formating sectors 3-127...', 10, 0
 
   FormatEnd:
@@ -1755,8 +1751,8 @@ Mnemonics:      'NOP', 'BNK', 'BFF', 'WIN', 'INP', 'INK', 'OUT',
                     LDA hl_hexresult                             ; return full byte value in A
                     RTS
 
-  hl_starttext:     'Waiting for HEX file... (ESC to stop)', 10, 0
-  hl_errortext:     '?CHECKSUM ERRORS: ', 0
+  hl_starttext:     'Waiting for HEX file (ESC)', 10, 0
+  hl_errortext:     'CHECKSUM ERRORS: ', 0
   hl_ramarea:       'Data written to ', 0
 
   hl_hexresult:     0x00

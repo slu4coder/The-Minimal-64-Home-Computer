@@ -1,4 +1,4 @@
-                #org 0x7000
+                #org 0x8000
 
                 LDI 0xfe STA 0xffff      ; init stack
                 JPS _Clear CLW _XPos
@@ -8,11 +8,11 @@ start:          LDI <string PHS          ; put LSB of string address on the stac
                 JPS _WaitInput
                 JPA start
 
-string:         'Hello! Press any key. ', 0
+string:         'Hello! Press any key.', 0
 
 #mute
 
 #org 0xb02a _WaitInput:
 #org 0xb030 _Clear:
 #org 0xb048 _Print:
-#org 0xbf8c _XPos:
+#org 0xbccc _XPos:

@@ -109,7 +109,7 @@ state_run:    JPS _ReadInput CPI 0 BEQ run_nokey     ; non-blocking key input
               LDA ypos
               ADR ptr                    ; add shape yoffset
               LSL PHS ADW ptr2           ; add y x 2 zum vram-pointer
-              PLS LSL LSL ADW ptr2
+              PLS LL2 ADW ptr2
               LDI '#' STR ptr2           ; write to VRAM
               INW ptr
               DEB vari
@@ -177,8 +177,8 @@ NewShape:     LDI <shape STA ptr2+0      ; copy a random piece into shape
               LDI <minos STA ptr+0
               LDI >minos STA ptr+1
 
-  rndagain:   JPS _Random LSR LSR LSR LSR LSR CPI 7 BCS rndagain
-              STA vari LSL LSL LSL ADA vari   ; x 9
+  rndagain:   JPS _Random RL4 ANI 7 CPI 7 BCS rndagain ; / 32
+              STA vari LL3 ADA vari   ; x 9
               ADW ptr
               LDI 8 STA vari
   nscopyloop: LDR ptr STR ptr2
@@ -206,7 +206,7 @@ TestShape:    LDI <shape STA ptr+0       ; test if pos is free
               BMI tsoutside              ; prüfe linke Grenze
                 CPI 20 BCS tsoutside     ; prüfe untere Grenze
               LSL PHS ADW ptr2           ; addiere y x 2 zum vram-pointer
-              PLS LSL LSL ADW ptr2       ; addiere y x 8 zum vram-pointer
+              PLS LL2 ADW ptr2           ; addiere y x 8 zum vram-pointer
               LDR ptr2                   ; lies VRAM an dieser Stelle
               CPI '#'
               BEQ tsoutside
@@ -305,7 +305,7 @@ U16_Text:       LDS 3 STA U16_C+1  ; PRINT A POSITIVE NUMBER
                 CPI 10 BCC U16_done
                   ADI 118 STA U16_C+2
   U16_done:      DEB U16_count BNE U16_shift
-                  LDA U16_C+2 LSL LSR
+                  LDA U16_C+2 ANI 0x7f
                   ADI '0' PHS INB U16_digits
                   LDA U16_C+2 ROL
                   LDA U16_C+0 ROL STA U16_C+0
@@ -411,9 +411,11 @@ rowfull:      0xff          ; boolean line completed
 #org 0xb04e _PrintHex:
 #org 0xb051 _ScrollUp:
 #org 0xb054 _ScrollDn:
-#org 0xbf70 _ReadPtr:
-#org 0xbf72 _ReadNum:
-#org 0xbf84 _RandomState:
-#org 0xbf8c _XPos:
-#org 0xbf8d _YPos:
-#org 0xbf8e _ReadBuffer:
+#org 0xb057 _ResetPS2:
+
+#org 0xbcb0 _ReadPtr:
+#org 0xbcb2 _ReadNum:
+#org 0xbcc4 _RandomState:
+#org 0xbccc _XPos:
+#org 0xbccd _YPos:
+#org 0xbcce _ReadBuffer:

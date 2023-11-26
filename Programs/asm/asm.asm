@@ -439,6 +439,5 @@ lptr:           0xffff        ; pointer to free label table. Format: 'label', ' 
 #org 0xb048 _Print:
 #org 0xb04b _PrintChar:
 #org 0xb04e _PrintHex:
-#org 0xbf70 _ReadPtr:
-#org 0xbf72 _ReadNum:
-
+#org 0xbcb0 _ReadPtr:
+#org 0xbcb2 _ReadNum:

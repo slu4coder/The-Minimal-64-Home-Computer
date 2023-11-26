@@ -30,9 +30,10 @@
 #org 0xb051 _ScrollUp:
 #org 0xb054 _ScrollDn:
 #org 0xb057 _ResetPS2:
-#org 0xbf70 _ReadPtr:
-#org 0xbf72 _ReadNum:
-#org 0xbf84 _RandomState:
-#org 0xbf8c _XPos:
-#org 0xbf8d _YPos:
-#org 0xbf8e _ReadBuffer:
+
+#org 0xbcb0 _ReadPtr:
+#org 0xbcb2 _ReadNum:
+#org 0xbcc4 _RandomState:
+#org 0xbccc _XPos:
+#org 0xbccd _YPos:
+#org 0xbcce _ReadBuffer:

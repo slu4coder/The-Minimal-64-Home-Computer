@@ -573,7 +573,8 @@ StateReceive:   JPS _WaitInput
                   LDI ' ' STR copyptr DEW copyptr ; convert TAB to double SPACE
                   LDI ' '
   rec_normal:     STR copyptr DEW copyptr
-  rec_indicator:  INW 0xc466 INW 0xc4a6           ; show receive indicator
+  rec_indicator:  INW viewport+0x15a              ; show receive indicator
+                  INW viewport+0x19a
                   JPA StateReceive
   rec_end:      LDI 10 OUT
                 CLB state
@@ -904,9 +905,10 @@ pu_n:           0xff
 #org 0xb051 _ScrollUp:
 #org 0xb054 _ScrollDn:
 #org 0xb057 _ResetPS2:
-#org 0xbf70 _ReadPtr:
-#org 0xbf72 _ReadNum:
-#org 0xbf84 _RandomState:
-#org 0xbf8c _XPos:
-#org 0xbf8d _YPos:
-#org 0xbf8e _ReadBuffer:
+
+#org 0xbcb0 _ReadPtr:
+#org 0xbcb2 _ReadNum:
+#org 0xbcc4 _RandomState:
+#org 0xbccc _XPos:
+#org 0xbccd _YPos:
+#org 0xbcce _ReadBuffer:
