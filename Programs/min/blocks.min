@@ -1,6 +1,6 @@
 def pos(char x, char y):
-  char posx @ 0xbf8c = x
-  char posy @ 0xbf8d = y
+  char posx @ 0xbccc = x
+  char posy @ 0xbccd = y
 
 def rnd():
   call(0xb021, 0)

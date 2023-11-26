@@ -46,8 +46,8 @@ def text(char s):
 
 # sets cursor position
 def pos(char x, char y):
-  char posx @ 0xbf8c = x
-  char posy @ 0xbf8d = y
+  char posx @ 0xbccc = x
+  char posy @ 0xbccd = y
 
 # returns a signed random number byte
 def rnd():
