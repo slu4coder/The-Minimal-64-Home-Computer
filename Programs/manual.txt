@@ -68,12 +68,11 @@ comes with the following built-in commands
 0x1000..0xafff 40KB free RAM
 
 0xb000..0xbcff 3KB OS kernel & API
+0xbcb0..0xbccd 30 bytes of OS variables
+0xbcce..0xbcff 50 bytes of OS line input buffer
 0xbd00..0xbeff 512 bytes of OS 'command memory'
-0xbf00..0xbf6f 112 bytes of OS 'save' command
-0xbf70..0xbf8d 30 bytes of OS variables
-0xbf8e..0xbfbf 50 bytes of OS line input buffer
 
-0xbfc0..0xbfff reserved for expansions cards
+0xbf00..0xbfff reserved for expansions cards
 
 0xc000..0xfeff 16KB video RAM (252 x 64 bytes)
 0xc30c         start of 400 x 240 pixels viewport
