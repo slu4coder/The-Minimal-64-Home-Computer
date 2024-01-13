@@ -1,14 +1,36 @@
-// 'Minimal 64' Assembler
-// by Carsten Herting (slu4) 2023, last update 10.10.2023
+// Frontend of the 'Minimal 64' Assembler
+// by Carsten Herting (slu4) 2023, last update 13.1.2024
 // Build with: g++ asm.cpp -O2 -oasm.exe -s -static
+
+#include <vector>
+#include <string>
+
+const std::vector<std::string> MNEMONICS		// Index = OpCode
+{
+	"NOP", "BNK", "BFF", "WIN", "INP", "INK", "OUT", "NOT", "NEG", "INC", "DEC", "CLC", "SEC",
+	"LSL", "LL2", "LL3", "LL4", "LL5", "LL6", "LL7", "LSR", "ROL", "RL2", "RL3", "RL4", "RL5", "RL6", "RL7", "ROR",
+  "LDI", "ADI", "SBI", "ACI", "SCI", "CPI", "ANI", "ORI", "XRI",
+	"JPA", "LDA", "STA", "ADA", "SBA", "ACA", "SCA", "CPA", "ANA", "ORA", "XRA",
+	"JPR", "LDR", "STR", "ADR", "SBR", "ACR", "SCR", "CPR", "ANR", "ORR",
+	"CLB", "NOB", "NEB", "INB", "DEB", "ADB", "SBB", "ACB", "SCB", "ANB", "ORB", "LLB", "LRB", "RLB", "RRB",
+	"CLW", "NOW", "NEW", "INW", "DEW", "ADW", "SBW", "ACW", "SCW", "LLW", "RLW",
+	"JPS", "RTS", "PHS", "PLS", "LDS", "STS", "BNE", "BEQ", "BCC", "BCS", "BPL", "BMI", "BGT", "BLE",
+	"TAX", "TXA", "TXY", "LXI", "LXA", "LTX", "INX", "DEX", "ADX", "SBX", "CPX", "ANX", "ORX", "XRX",
+	"TAY", "TYA", "TYX", "LYI", "LYA", "LTA", "INY", "DEY", "ADY", "SBY", "CPY", "ANY", "ORY", "XRY", "HLT"
+};
 
 /*
 	---------------------------------------------------
 	Minimal 64 Assembler by Carsten Herting (slu4) 2023
 	---------------------------------------------------
+	This file is to be included alongside the definition
+	file of allowed mnemonics. This file is used by all
+	variants of the Minimal 64, Minimal 64x2 and Minimal
+	UART Ultra CPU, either integrated into an emulator or
+	as an executable command line front-end.
 
 	Please note:
-	#org always sets pc but only sets mc when active. This allowes assembling a program at
+	#org always sets pc but only sets mc when active. This allows assembling a program at
 	an address differing from it's later target as needed to assemble asm.asm with asm.
 
 	#org 0x2000		; sets pc=mc=0x2000
@@ -34,23 +56,6 @@
 #include <sstream>
 #include <vector>
 #include <algorithm>
-
-#include <vector>
-#include <string>
-
-const std::vector<std::string> MNEMONICS		// Index = OpCode
-{
-	"NOP", "BNK", "BFF", "WIN", "INP", "INK", "OUT", "NOT", "NEG", "INC", "DEC", "CLC", "SEC",
-	"LSL", "LL2", "LL3", "LL4", "LL5", "LL6", "LL7", "LSR", "ROL", "RL2", "RL3", "RL4", "RL5", "RL6", "RL7", "ROR",
-        "LDI", "ADI", "SBI", "ACI", "SCI", "CPI", "ANI", "ORI", "XRI",
-	"JPA", "LDA", "STA", "ADA", "SBA", "ACA", "SCA", "CPA", "ANA", "ORA", "XRA",
-	"JPR", "LDR", "STR", "ADR", "SBR", "ACR", "SCR", "CPR", "ANR", "ORR",
-	"CLB", "NOB", "NEB", "INB", "DEB", "ADB", "SBB", "ACB", "SCB", "ANB", "ORB", "LLB", "LRB", "RLB", "RRB",
-	"CLW", "NOW", "NEW", "INW", "DEW", "ADW", "SBW", "ACW", "SCW", "LLW", "RLW",
-	"JPS", "RTS", "PHS", "PLS", "LDS", "STS", "BNE", "BEQ", "BCC", "BCS", "BPL", "BMI", "BGT", "BLE",
-	"TAX", "TXA", "TXY", "LXI", "LXA", "LTX", "INX", "DEX", "ADX", "SBX", "CPX", "ANX", "ORX", "XRX",
-	"TAY", "TYA", "TYX", "LYI", "LYA", "LTA", "INY", "DEY", "ADY", "SBY", "CPY", "ANY", "ORY", "XRY", "HLT"
-};
 
 char opCode(const std::string& src, int ep)
 {
@@ -129,7 +134,7 @@ class HexPrinter
 		}
 		uint8_t buffer[16]{}; // emission line buffer
 		int used{ 0 }; // number of emitted bytes pending in buffer
-		int linaddr{ -1 }; // start address of the current data in buffer
+		int linaddr{ 0 }; // start address of the current data in buffer
 		std::stringstream& mOut; // emission into this string stream
 };
 
@@ -174,8 +179,9 @@ void Assembler(const std::string& src, const std::vector<std::string>& mnemonics
 			if (src[ep] == '+' || src[ep] == '-') { elen--; ep++; }	  // consume optional leading + or -
 			if (src[ep] == '0' && src[ep+1] == 'x') 									// hex word or byte
 			{
-				if(elen > 4) { if (fastjump) pc++; else pc += 2; }
-				else pc++;
+				size_t k = src.find_first_not_of("0123456789abcdef", ep+2);
+				if (k - ep > 4) { if (fastjump) pc++; else pc += 2; }		// counts 0x03+0x03 correctly as 1
+				else pc++;																							// ... elen > 4 would miscount byte expr as 2
 				fastjump = false;
 			}
 			else if (src[ep] >= '0' && src[ep] <= '9') { pc++; fastjump = false; } // plain number (8-bit only) 
@@ -305,44 +311,6 @@ void Assembler(const std::string& src, const std::vector<std::string>& mnemonics
 	}
 }
 
-int main(int argc, char *argv[])
-{
-	std::cout << "Minimal 64 Assembler by Carsten Herting (slu4) 2023\n\n";		// output help screen
-
-	bool dosym = false;																// by default don't output a symbol table
-	std::string symtag = "";													// by default don't use any symbol tag
-	int filenamepos = 0;															// extract possible -s parameter and filename
-	for (int i=1; i<argc; i++)												// index zero contains "asm" itself
-	{
-		if (argv[i][0] == '-' && argv[i][1] == 's')	{ dosym = true; symtag = std::string(&argv[i][2]); }
-		else filenamepos = i;														// nope, plain filename => remember it's index inside argv[]
-	}
-
-	if (filenamepos > 0)															// does a valid argument position of a filename exist?
-	{
-		std::ifstream file(argv[filenamepos]);
-		if (file.is_open())
-		{
-      std::stringstream hexout, errors;
-      std::string source;
-      std::getline(file, source, '\0');
-      file.close();
-      Assembler(source, MNEMONICS, hexout, errors, dosym, symtag);
-      if (errors.str().size() == 0) std::cout << hexout.str(); else std::cout << errors.str();
-		}
-		else std::cout << ("ERROR: Can't open \"" + std::string(argv[filenamepos]) + "\".\n");
-	}
-	else
-	{
-		std::cout << "  Usage: asm <sourcefile> [-s[<tag>]]\n\n";
-		std::cout << "assembles a <sourcefile> to machine code and outputs\n";
-		std::cout << "the result in Intel HEX format to the console.\n\n";
-		std::cout << "  -s[<tag>]  outputs a list of symbolic constants\n";
-		std::cout << "             [starting with <tag>] and their values.\n";
-	}
-	return 0;
-}
-
 // FUNCTIONAL DESCRIPTION
 
 // This assembler reads an assembly language source file, translates the instructions into machine code,
@@ -394,3 +362,41 @@ int main(int argc, char *argv[])
 // implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public
 // License for more details. You should have received a copy of the GNU General Public License along
 // with this program. If not, see https://www.gnu.org/licenses/.
+
+int main(int argc, char *argv[])
+{
+	std::cout << "Minimal 64 Assembler by Carsten Herting (slu4) 2023\n\n";		// output help screen
+
+	bool dosym = false;																// by default don't output a symbol table
+	std::string symtag = "";													// by default don't use any symbol tag
+	int filenamepos = 0;															// extract possible -s parameter and filename
+	for (int i=1; i<argc; i++)												// index zero contains "asm" itself
+	{
+		if (argv[i][0] == '-' && argv[i][1] == 's')	{ dosym = true; symtag = std::string(&argv[i][2]); }
+		else filenamepos = i;														// nope, plain filename => remember it's index inside argv[]
+	}
+
+	if (filenamepos > 0)															// does a valid argument position of a filename exist?
+	{
+		std::ifstream file(argv[filenamepos]);
+		if (file.is_open())
+		{
+      std::stringstream hexout, errors;
+      std::string source;
+      std::getline(file, source, '\0');
+      file.close();
+      Assembler(source, MNEMONICS, hexout, errors, dosym, symtag);
+      if (errors.str().size() == 0) std::cout << hexout.str(); else std::cout << errors.str();
+		}
+		else std::cout << ("ERROR: Can't open \"" + std::string(argv[filenamepos]) + "\".\n");
+	}
+	else
+	{
+		std::cout << "asm <sourcefile> [-s[<tag>]]\n\n";
+		std::cout << "assembles a <sourcefile> to machine code and outputs\n";
+		std::cout << "the result in Intel HEX format to the console.\n\n";
+		std::cout << "  -s[<tag>]  outputs a list of symbolic constants\n";
+		std::cout << "             [starting with <tag>] and their values.\n";
+	}
+	return 0;
+}
