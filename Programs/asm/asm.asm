@@ -61,7 +61,15 @@ PassOne:      JPS init_cntrs CLB labels                     ; write a EOF zero t
     OneHex:       LDR ep CPI '0' BNE OneStar
                     INW ep DEB elen
                     LDR ep CPI 'x' BNE OneNothex
-                      INW ep DEB elen CPI 2 BLE OneByte
+                      INW ep DEB elen
+                      LDA ep+0 STA lptr+0                   ; BUGFIX: evaluate length of expression part
+                      LDA ep+1 STA lptr+1
+      partloop:       LDR lptr CPI 'f' BGT partend          ; load content != 0..9 or a..f?
+                        CPI 'a' BCS parton
+                          CPI '9' BGT partend
+                            CPI '0' BCC partend
+      parton:                 INW lptr JPA partloop
+      partend:        LDA lptr+0 SBA ep+0 CPI 2 BLE OneByte ; evaluate byte size of expression part
     OneWord:            INW pc
     OneByte:            INW pc JPA OneExit
     OneNothex:    DEW ep INB elen
