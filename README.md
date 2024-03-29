@@ -1,4 +1,6 @@
-# The 'Minimal 64 Home Computer'
+# Legacy: The 'Minimal 64 Home Computer'
+
+# See https://github.com/slu4coder/Minimal-64x4-Home-Computer for the most recent version.
 
 See "CHANGE LOG" for a brief summary of the relevant updates.
 
