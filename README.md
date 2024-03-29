@@ -1,4 +1,4 @@
-# Legacy: 'Minimal 64 Home Computer'
+# Legacy: Minimal 64 Home Computer
 
 See https://github.com/slu4coder/Minimal-64x4-Home-Computer for the most recent version.
 
