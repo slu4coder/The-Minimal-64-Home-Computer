@@ -6,8 +6,6 @@ Quick note: This is a free and non-commercial project. I am in no way associated
 Any such activity represents a license violation. Individual licenses apply for hardware and software parts. Please refer to
 appropriate documentations for detailed licensing information.
 
-See "CHANGE LOG" for a brief summary of the relevant updates.
-
 ![IMG_1506_2](https://github.com/slu4coder/The-Minimal-64-Home-Computer/assets/52576999/b598f07d-306d-4c5c-b5dd-82162dc874fa)
 
 Here is my take on 80's home computer magic: The most computer from the least logic or the shortest way from TTL to Space Invaders.
@@ -43,5 +41,7 @@ FEATURES
 ● Emulator, cross-assembler (Windows) and classic games (TETRIS clone, Space Invaders clone)
 
 ● Open-source emulators in JAVA/PROCESSING and JAVASCRIPT/p5.js https://editor.p5js.org/slu4coder/full/aOUivViNt
+
+See "CHANGE LOG" for a brief summary of the relevant updates.
   
 Have fun!
